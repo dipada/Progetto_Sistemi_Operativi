@@ -1,12 +1,3 @@
-# finale: dirtest/test.o dir2/stampa.o
-#  gcc -o finale dirtest/test.o dir2/stampa.o
-# 
-# test.o: dirtest/test.c
-#  gcc -c dirtest/test.c
-# 
-# stampa.o: dir2/stampa.c
-# gcc -c dir2/stampa.c
-
 all: start_taxicab mappa
 
 start_taxicab: master/master.o master/master_function.o 
