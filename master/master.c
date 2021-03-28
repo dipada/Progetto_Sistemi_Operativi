@@ -14,11 +14,5 @@ Alla fine della simulazione vengono stampati:
 
 int main(int argc, char **argv){
     
-       printf("ciao master\n");
-    
-    if(execve("mappa/mappa", NULL, NULL) == -1){
-        ERROR_EXIT
-    }
-
     exit(EXIT_SUCCESS);
 }
