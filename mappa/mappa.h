@@ -1,6 +1,18 @@
 #ifndef __MAPPA_H__
 #define __MAPPA_H__
 #include <stdio.h>
+#include <stdlib.h>
+
+
+
+#define ERROR_EXIT     if(errno){fprintf(stderr,                            \
+                        "[%s]-Line:%d-PID[%ld] >> Errore %d (%s)\n",        \
+                        __FILE__ ,                                          \
+                        __LINE__,                                           \
+                        (long)getpid(),                                     \
+                        errno,                                              \
+                        strerror(errno));                                   \
+                        exit(EXIT_FAILURE);}
 
 /* parametri definiti a tempo di compilazione */
 #define SO_WIDTH 20
@@ -23,7 +35,23 @@ struct{
     int so_duration;
 }parameters;
 
+/* struttura cella della mappa */
+typedef struct _cell{
+    unsigned long cross_time;   /* tempo di attraversamento della cella */
+    unsigned short capacity;    /* capacità della cella */
+}map_cell;
 
-/*carica la configurazione dal file selezionato */
+/* struttura della mappa */
+typedef struct{
+    map_cell m_cell[SO_WIDTH*SO_HEIGHT];
+}map;
+
+
+/*carica la configurazione dal file selezionato 
 struct configuration* load_configuration(int conf, struct configuration* param);
+*/
+
+/* stampa la mappa */
+void print_map(map * mappa);
+
 #endif
