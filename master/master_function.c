@@ -1,7 +1,7 @@
 #include "master.h"
 
 /* legge da file e carica la configurazione nell'array passato */
-void load_configuration(int conf, int **arr_param, int len){
+/*void load_configuration(int conf, int **arr_param, int len){
     FILE *fp;
     char buf[BUFSIZE];
     
@@ -14,8 +14,8 @@ void load_configuration(int conf, int **arr_param, int len){
     while(fgets(buf, BUFSIZE, fp) != NULL){
         
         if(sscanf(buf,"SO_HOLES=%d", arr_param[HOLES]) > 0){
-            /* registrare i flags */
-        }
+           */ /* registrare i flags */
+    /*    }
         if(sscanf(buf,"SO_TOP_CELLS=%d", arr_param[TOP_CELLS]) > 0){
             
         }
@@ -26,8 +26,8 @@ void load_configuration(int conf, int **arr_param, int len){
             
         }
         if(sscanf(buf,"SO_CAP_MAX=%d", arr_param[CAP_MAX]) > 0){
-            /* registrare i flags */
-        }
+        */    /* registrare i flags */
+        /*}
         if(sscanf(buf,"SO_TAXI=%d", arr_param[TAXI]) > 0){
             
         }
@@ -47,8 +47,8 @@ void load_configuration(int conf, int **arr_param, int len){
 
     fclose(fp);
 }
-
-
+*/
+/*
 void print_charged_conf(int * parameters[], int len, int conf){
     char conf_name[7];
     char c = 'n';
@@ -61,9 +61,10 @@ void print_charged_conf(int * parameters[], int len, int conf){
     if(conf == 3){
         strcpy(conf_name, "custom");
     }
+    */
         
     /*while(c != 'y' && c != 'Y'){*/
-        printf("Hai caricato la seguente configurazione\n\n");    
+       /* printf("Hai caricato la seguente configurazione\n\n");    
         printf("_______________________________\n");
         printf("parametro\t\t\"%s\"\n", conf_name);
         printf("_______________________________\n");
@@ -78,6 +79,6 @@ void print_charged_conf(int * parameters[], int len, int conf){
         printf("DURANTION \t\t%d\n", *(parameters[DURATION]));
         printf("TOP CELLS \t\t%d\n", *(parameters[TOP_CELLS]));
         printf("Confermare?[y/n]\n>> ");
-        c = getchar();
+        c = getchar();*/
     /*}*/
-}
+/*}*/

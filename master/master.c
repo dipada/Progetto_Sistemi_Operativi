@@ -13,50 +13,12 @@ Alla fine della simulazione vengono stampati:
 #include "master.h"
 
 int main(int argc, char **argv){
-
-    int so_holes = -1, so_top_cells = -1, so_sources = -1, so_cap_min = -1, so_cap_max = -1, so_taxi = -1, so_timesec_min = -1 , so_timesec_max = -1, so_timeout = -1, so_duration = -1;
-    int conf = -1, i;
-    char c; 
     
-    int * parameters[] = {&SO_HOLES, &SO_TOP_CELLS, &SO_SOURCES, &SO_CAP_MIN, &SO_CAP_MAX, &SO_TAXI, &SO_TIMENSEC_MIN, &SO_TIMENSEC_MAX, &SO_TIMEOUT, &SO_DURATION};
-
-    /*
-    Il programma può essere avviato nelle seguenti modalità:
-        MODALITA RAPIDA, passando a linea di comando il numero della configurazione che si vuole caricare
-        MODALITA STANDARD, avviando il programma senza parametri
-    */
-    if(argc > 2){
-        fprintf(stderr,"[%s] >> Il programma può essere avviato solamente nelle seguenti modalità:\n  - Modalità standard: lanciando il programma senza parametri\n  - Modalità rapida: lanciando il programma passando un solo numero della seguente lista.\n\t[1] configurazione large\n\t[2] configurazione dense\n\t[3] configurazione personalizzata\n", __FILE__);
-        exit(EXIT_FAILURE);
-    }else if(argc == 2){ 
-        sscanf(argv[1], "%d", &conf);
-        if(!(conf >= 1 && conf <= 3)){
-            fprintf(stderr,"[%s] >> valore inserito non valido. I valori possibili sono:\n[1] configurazione large\n[2] configurazione dense\n[3] configurazione personalizzata\n", __FILE__);
-            exit(EXIT_FAILURE);
-        }else{
-            printf("[%s] >> valore accettato.\n", __FILE__);
-        }
-    }else{
-        printf("[%s] >> Quale file di configurazione si intende caricare?\n[1] configurazione large\n[2] configurazione dense\n[3] configurazione personalizzata\nInserisci un valore >> ", __FILE__);
-        while(!(conf >= 1 && conf <= 3)){
-            c = getchar();
-            conf = atol(&c);
-            if(!(conf >= 1 && conf <= 3)){
-                fprintf(stderr,"[%s] >> valore inserito non valido.\n", __FILE__);
-                exit(EXIT_FAILURE);
-            }else{
-                printf("[%s] >> valore accettato.\n", __FILE__);
-            }
-        }
+       printf("ciao master\n");
+    
+    if(execve("mappa/mappa", NULL, NULL) == -1){
+        ERROR_EXIT
     }
-
-
-    /* 
-        caricamento della configurazione
-    */
-       
-    load_configuration(conf, parameters, 10);
-    
 
     exit(EXIT_SUCCESS);
 }
