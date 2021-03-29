@@ -13,6 +13,6 @@ Alla fine della simulazione vengono stampati:
 #include "master.h"
 
 int main(int argc, char **argv){
-    
-    exit(EXIT_SUCCESS);
+    printf("master");
+exit(EXIT_SUCCESS);
 }
