@@ -20,9 +20,15 @@
 
 #define BUFSIZE 128
 
+/* Colori per le stampe*/
+#define CDEFAULT "\033[0m"
+#define CRED "\033[0;31m"
+#define CGREEN "\033[0;32m"
+#define CYELLOW "\033[0;33m"
+
 /* parametri definiti a tempo di compilazione */
-#define SO_WIDTH 5
-#define SO_HEIGHT 4
+#define SO_WIDTH 20
+#define SO_HEIGHT 10
 
 /* path file di configurazione*/
 #define CONF_FILE ("../file_configurazione/conf.txt")
@@ -47,6 +53,8 @@ typedef struct{
     int capacity;       /* capacità della cella */
     int is_hole;        /* la cella è un hole 1 vero, 0 falso */
     int is_source;      /* la cella è un source 1 vero, 0 falso */
+    int n_taxi_here;    /* numero di taxi presenti in questa cella */
+    /* long pid_taxi_here[capacity];  pid dei taxi in questa cella */
 }map_cell;
 
 /* struttura della mappa */
@@ -57,6 +65,8 @@ typedef struct{
 
 /* carica la configurazione dal file passato col pathname */
 void load_configuration(struct parameters* param, char * filename);
+
+void print_map(const map * city_map);
 
 /* Inizializza la mappa, posiziona le SO_HOLES */
 int initialize_map(map *city_map, const struct parameters *param);
@@ -71,27 +81,27 @@ int place_hole(map *city_map, int n_hole, const int n_cells);
 int get_random(int a, int b);
 
 /* controlla se la cella sinistra a quella data è un hole. Ritorna 1 vero, 0 altrimenti */
-int sx_cell_hole(map *city_map, int start_cell);
+int sx_cell_hole(const map *city_map, const int start_cell);
 
 /* controlla se la cella destra a quella data è un hole. Ritorna 1 vero, 0 altrimenti */
-int dx_cell_hole(map *city_map, int start_cell);
+int dx_cell_hole(const map *city_map, const int start_cell);
 
 /* controlla se la cella sopra a quella data è un hole. Ritorna 1 vero, 0 altrimenti */
-int up_cell_hole(map *city_map, int start_cell);
+int up_cell_hole(const map *city_map, const int start_cell);
 
 /* controlla se la cella sotto a quella data è un hole. Ritorna 1 vero, 0 altrimenti */
 int dw_cell_hole(const map *city_map, const int start_cell);
 
 /* controlla se la cella sinistra superiore (diagonale) a quella data è un hole. Ritorna 1 vero, 0 altrimenti */
-int up_sx_cell_hole(map *city_map, int start_cell);
+int up_sx_cell_hole(const map *city_map,const int start_cell);
 
 /* controlla se la cella destra superiore (diagonale) a quella data è un hole. Ritorna 1 vero, 0 altrimenti */
-int up_dx_cell_hole(map *city_map, int start_cell);
+int up_dx_cell_hole(const map *city_map,const int start_cell);
 
 /* controlla se la cella sinistra inferiore (diagonale) data è un hole. Ritorna 1 vero, 0 altrimenti */
-int dw_sx_cell_hole(map *city_map, int start_cell);
+int dw_sx_cell_hole(const map *city_map,const int start_cell);
 
 /* controlla se la cella destra inferiore (diagonale) a quella data è un hole. Ritorna 1 vero, 0 altrimenti */
-int dw_dx_cell_hole(map *city_map, int start_cell);
+int dw_dx_cell_hole(const map *city_map,const int start_cell);
 
 #endif
