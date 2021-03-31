@@ -11,18 +11,25 @@ Alla fine della simulazione vengono stampati:
 */
 
 #include "master.h"
-#include <sys/wait.h>
+#include "../mappa/mappa.h"
+
+void sigint_h(int s){
+    printf("Handler sono %d\n", getpid());
+    fflush(stdout);
+    exit(EXIT_SUCCESS);
+}
 
 int main(int argc, char **argv){
-   
-    
+
+   signal(SIGINT, sigint_h);
+    printf("PAD sono %d\n", getpid());
     if(fork() == 0){
         if(execl("mappa/map", "map", (char *) NULL)  == -1){
             ERROR_EXIT
         }
     
     }
-    wait(NULL);
     printf("finito3\n");
+    
 exit(EXIT_SUCCESS);
 }

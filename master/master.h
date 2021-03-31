@@ -6,6 +6,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/wait.h>
+#include <signal.h>
 
 #define ERROR_EXIT     if(errno){fprintf(stderr,                            \
                         "[%s]-Line:%d-PID[%ld] >> Errore %d (%s)\n",        \
@@ -15,5 +17,7 @@
                         errno,                                              \
                         strerror(errno));                                   \
                         exit(EXIT_FAILURE);}
+
+#define SHMKEY 23899128
 
 #endif

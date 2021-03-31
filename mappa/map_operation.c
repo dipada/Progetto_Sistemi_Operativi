@@ -102,7 +102,7 @@ void print_map(const map * city_map){
         }else{
             printf("| ");
         }
-        if((i+1)%SO_WIDTH == 0){ /* se è l'ultima colonnaa della riga stampa "|" e stampa una riga di separazione */
+        if((i+1)%SO_WIDTH == 0){ /* se è l'ultima colonna della riga stampa "|" e stampa una riga di separazione */
             printf("|\n");
             printf("*-");
             for(j = 0; j < SO_WIDTH-1; j++){
@@ -116,7 +116,7 @@ void print_map(const map * city_map){
 }
 
 
-/* Inizializza la mappa, posiziona le SO_HOLES e So_SOURCE */
+/* Inizializza la mappa, posiziona le SO_HOLES */
 int initialize_map(map *city_map, const struct parameters *param){
     
     /* inizializzo tutte le celle della mappa */
@@ -143,7 +143,6 @@ void fill_map(map *city_map, const struct parameters *param){
         }
         city_map->m_cell[i].n_taxi_here = 0;
     }
-    printf("fill\n");
 }
 
 /* posiziona le n_hole nella mappa. n_cells è il numero totale complessivo di celle */
@@ -163,7 +162,6 @@ int place_hole(map *city_map, int n_hole, int n_cells){
         if(rand_position == 0){
             if((city_map->m_cell[rand_position].is_hole != 1) && !(dx_cell_hole(city_map,rand_position)) && !(dw_cell_hole(city_map,rand_position)) && !(dw_dx_cell_hole(city_map,rand_position))){ 
             /* la cella non è hole e quelle attorno nemmeno */
-                
                 n_hole--;
                 city_map->m_cell[rand_position].is_hole = 1;
             }
@@ -173,7 +171,6 @@ int place_hole(map *city_map, int n_hole, int n_cells){
         if(rand_position == SO_WIDTH-1){
             if((city_map->m_cell[rand_position].is_hole != 1) && !(sx_cell_hole(city_map,rand_position)) && !(dw_cell_hole(city_map,rand_position)) && !(dw_sx_cell_hole(city_map,rand_position))){ 
             /* la cella non è hole e quelle attorno nemmeno */
-                
                 n_hole--;
                 city_map->m_cell[rand_position].is_hole = 1;
             }
@@ -182,8 +179,7 @@ int place_hole(map *city_map, int n_hole, int n_cells){
         /* cella angolo basso sx */
           if(rand_position == (SO_WIDTH*SO_HEIGHT)-SO_WIDTH){
             if((city_map->m_cell[rand_position].is_hole != 1) && !(dx_cell_hole(city_map,rand_position)) && !(up_cell_hole(city_map,rand_position)) && !(up_dx_cell_hole(city_map,rand_position))){ 
-            /* la cella non è hole e quelle attorno nemmeno */
-                
+            /* la cella non è hole e quelle attorno nemmeno */                
                 n_hole--;
                 city_map->m_cell[rand_position].is_hole = 1;
             }
@@ -192,8 +188,7 @@ int place_hole(map *city_map, int n_hole, int n_cells){
         /* cella angolo basso dx */
         if(rand_position == (SO_WIDTH*SO_HEIGHT)-1){
             if((city_map->m_cell[rand_position].is_hole != 1) && !(sx_cell_hole(city_map,rand_position)) && !(up_cell_hole(city_map,rand_position)) && !(up_sx_cell_hole(city_map,rand_position))){ 
-            /* la cella non è hole e quelle attorno nemmeno */
-                
+            /* la cella non è hole e quelle attorno nemmeno */                
                 n_hole--;
                 city_map->m_cell[rand_position].is_hole = 1;
             }
@@ -203,7 +198,6 @@ int place_hole(map *city_map, int n_hole, int n_cells){
         if(((rand_position%SO_WIDTH) == 0) && (rand_position != 0) && (rand_position != (SO_WIDTH*SO_HEIGHT)-SO_WIDTH)){
             if((city_map->m_cell[rand_position].is_hole != 1) && !(dx_cell_hole(city_map,rand_position)) && !(up_cell_hole(city_map,rand_position)) && !(dw_cell_hole(city_map,rand_position)) && !(dw_dx_cell_hole(city_map,rand_position)) && !(up_dx_cell_hole(city_map,rand_position))){ 
             /* la cella non è hole e quelle a destra, sopra, sotto e diagonali nemmeno */
-                
                 n_hole--;
                 city_map->m_cell[rand_position].is_hole = 1;
             }
@@ -213,7 +207,6 @@ int place_hole(map *city_map, int n_hole, int n_cells){
         if(((rand_position%SO_WIDTH) == SO_WIDTH-1) && (rand_position != SO_WIDTH-1) && (rand_position != (SO_WIDTH*SO_HEIGHT)-1)){
             if((city_map->m_cell[rand_position].is_hole != 1) && !(sx_cell_hole(city_map,rand_position)) && !(up_cell_hole(city_map,rand_position)) && !(dw_cell_hole(city_map,rand_position)) && !(dw_sx_cell_hole(city_map,rand_position)) && !(up_sx_cell_hole(city_map,rand_position))){ 
             /* la cella non è hole e quelle a sinistra, sopra, sotto e diagonali nemmeno */
-                n_cells--;
                 n_hole--;
                 city_map->m_cell[rand_position].is_hole = 1;
             }
@@ -223,7 +216,6 @@ int place_hole(map *city_map, int n_hole, int n_cells){
         if(((rand_position%SO_WIDTH) == rand_position) && (rand_position != 0) && (rand_position != (SO_WIDTH-1))){
             if((city_map->m_cell[rand_position].is_hole != 1) && !(sx_cell_hole(city_map,rand_position)) && !(dx_cell_hole(city_map,rand_position)) && !(dw_cell_hole(city_map,rand_position)) && !(dw_sx_cell_hole(city_map,rand_position)) && !(dw_dx_cell_hole(city_map,rand_position))){ 
             /* la cella non è hole e quelle a sinistra, sotto, destra e diagonali nemmeno */
-                n_cells--;
                 n_hole--;
                 city_map->m_cell[rand_position].is_hole = 1;
             }
@@ -233,7 +225,6 @@ int place_hole(map *city_map, int n_hole, int n_cells){
         if((rand_position > (SO_WIDTH*SO_HEIGHT)-SO_WIDTH) && (rand_position < (SO_WIDTH*SO_HEIGHT)-1)){ 
            if((city_map->m_cell[rand_position].is_hole != 1) && !(sx_cell_hole(city_map,rand_position)) && !(dx_cell_hole(city_map,rand_position)) && !(up_cell_hole(city_map,rand_position)) && !(up_sx_cell_hole(city_map,rand_position)) && !(up_dx_cell_hole(city_map,rand_position))){
             /* la cella non è hole e quelle a sinistra, destra, sopra e diagonali nemmeno */
-                n_cells--;
                 n_hole--;
                 city_map->m_cell[rand_position].is_hole = 1;
            }
@@ -245,7 +236,6 @@ int place_hole(map *city_map, int n_hole, int n_cells){
             if((city_map->m_cell[rand_position].is_hole != 1) && !sx_cell_hole(city_map,rand_position) && !dx_cell_hole(city_map,rand_position)         \
                     && !up_cell_hole(city_map,rand_position) && !dw_cell_hole(city_map,rand_position) && !up_sx_cell_hole(city_map,rand_position)       \
                     && !up_dx_cell_hole(city_map,rand_position) && !dw_sx_cell_hole(city_map,rand_position) && !dw_dx_cell_hole(city_map,rand_position)){
-                
                 n_cells--;
                 n_hole--;
                 city_map->m_cell[rand_position].is_hole = 1;

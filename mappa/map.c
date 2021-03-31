@@ -18,7 +18,8 @@ if(initialize_map(&city_map, &param) == -1 ){
 
 
 print_map(&city_map);
-
+printf("FI sono %d\n", getpid());
+for(;;);
 
 exit(EXIT_SUCCESS);
 }
