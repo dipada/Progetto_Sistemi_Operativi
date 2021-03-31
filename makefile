@@ -3,7 +3,7 @@ CFLAGS= -c -std=c89 -pedantic -Wall
 LINKING= $(CC) -o
 
 all: start_taxicab map
-
+	
 start_taxicab: master/master.o master/master_function.o
 	$(LINKING) start_taxicab master/master.o master/master_function.o 
 

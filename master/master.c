@@ -14,15 +14,15 @@ Alla fine della simulazione vengono stampati:
 #include <sys/wait.h>
 
 int main(int argc, char **argv){
+   
     
-    system("pwd");
     if(fork() == 0){
-        if(execlp("mappa/map", "map",  NULL)  == -1){
+        if(execl("mappa/map", "map", (char *) NULL)  == -1){
             ERROR_EXIT
         }
-        /*system("mappa/map");*/
+    
     }
     wait(NULL);
-    printf("\n");
+    printf("finito3\n");
 exit(EXIT_SUCCESS);
 }

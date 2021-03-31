@@ -27,7 +27,7 @@
 #define CYELLOW "\033[0;33m"
 
 /* parametri definiti a tempo di compilazione */
-#define SO_WIDTH 10
+#define SO_WIDTH 60
 #define SO_HEIGHT 10
 
 /* path file di configurazione*/
