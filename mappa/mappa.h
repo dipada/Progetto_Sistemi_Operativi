@@ -27,11 +27,11 @@
 #define CYELLOW "\033[0;33m"
 
 /* parametri definiti a tempo di compilazione */
-#define SO_WIDTH 20
+#define SO_WIDTH 10
 #define SO_HEIGHT 10
 
 /* path file di configurazione*/
-#define CONF_FILE ("../file_configurazione/conf.txt")
+#define CONF_FILE ("file_configurazione/conf.txt")
 
 /* struttura parametri di configurazione */
 struct parameters{

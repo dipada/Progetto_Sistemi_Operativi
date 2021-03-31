@@ -11,8 +11,18 @@ Alla fine della simulazione vengono stampati:
 */
 
 #include "master.h"
+#include <sys/wait.h>
 
 int main(int argc, char **argv){
-    printf("master");
+    
+    system("pwd");
+    if(fork() == 0){
+        if(execlp("mappa/map", "map",  NULL)  == -1){
+            ERROR_EXIT
+        }
+        /*system("mappa/map");*/
+    }
+    wait(NULL);
+    printf("\n");
 exit(EXIT_SUCCESS);
 }
