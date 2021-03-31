@@ -1,84 +1,48 @@
 #include "master.h"
 
-/* legge da file e carica la configurazione nell'array passato */
-/*void load_configuration(int conf, int **arr_param, int len){
-    FILE *fp;
-    char buf[BUFSIZE];
+/* stampa la mappa evidenzianziando hole, sources e top_cells */
+void print_map(map * city_map){
+    int register i,j; 
     
-    int flags[] = {0,0,0,0,0,0,0,0,0,0,0};
-
-    if((fp = fopen(OPEN_CONF(conf), "r")) == NULL){
-        ERROR_EXIT
-    }
+    printf("*-");
+    /* stampo la riga iniziale della mappa */
+    for(i=0; i<SO_WIDTH-1; i++){ 
+	    printf("--");
+	}
+	printf("*\n");
     
-    while(fgets(buf, BUFSIZE, fp) != NULL){
-        
-        if(sscanf(buf,"SO_HOLES=%d", arr_param[HOLES]) > 0){
-           */ /* registrare i flags */
-    /*    }
-        if(sscanf(buf,"SO_TOP_CELLS=%d", arr_param[TOP_CELLS]) > 0){
-            
+    /* stampo le righe della mappa suddividendole per celle
+       evidenzio SO_HOLES ( X rossa )
+       SO_SOURCES ( S verde )
+       SO_TOP_CELLS ( * YELLOW )  TODO
+     */
+    for(i = 0; i < SO_WIDTH*SO_HEIGHT; i++){
+        if(city_map->m_cell[i].is_hole == 1 || city_map->m_cell[i].is_source == 1){
+            if(city_map->m_cell[i].is_hole == 1){
+                printf("|"CRED"X"CDEFAULT);
+            }else{            
+                printf("|"CGREEN"S"CDEFAULT);
+            }
+        }else{
+            printf("| ");
         }
-        if(sscanf(buf,"SO_SOURCES=%d", arr_param[SOURCES]) > 0){
-            
+        if((i+1)%SO_WIDTH == 0){ /* se è l'ultima colonna della riga stampa "|" e stampa una riga di separazione */
+            printf("|\n");
+            printf("*-");
+            for(j = 0; j < SO_WIDTH-1; j++){
+                printf("--");
+            }
+            printf("*\n");
         }
-        if(sscanf(buf,"SO_CAP_MIN=%d", arr_param[CAP_MIN]) > 0){
-            
-        }
-        if(sscanf(buf,"SO_CAP_MAX=%d", arr_param[CAP_MAX]) > 0){
-        */    /* registrare i flags */
-        /*}
-        if(sscanf(buf,"SO_TAXI=%d", arr_param[TAXI]) > 0){
-            
-        }
-        if(sscanf(buf,"SO_TIMENSEC_MIN=%d", arr_param[TIMENSEC_MIN]) > 0){
-            
-        }
-        if(sscanf(buf,"SO_TIMENSEC_MAX=%d", arr_param[TIMENSEC_MAX]) > 0){
-            
-        }
-        if(sscanf(buf,"SO_TIMEOUT=%d", arr_param[TIMEOUT]) > 0){
-            
-        }
-        if(sscanf(buf,"SO_DURATION=%d", arr_param[DURATION]) > 0){
-            
-        }        
     }
-
-    fclose(fp);
+    printf("\n");
+    printf("Legend: "CRED"X"CDEFAULT" Holes "CGREEN"S"CDEFAULT" Sources "CYELLOW"*"CDEFAULT" Top_Cells\n");
 }
-*/
-/*
-void print_charged_conf(int * parameters[], int len, int conf){
-    char conf_name[7];
-    char c = 'n';
-    if(conf == 1){
-        strcpy(conf_name, "large");
+
+int check_status(int status){
+    if(WIFEXITED(status)){
+        return WEXITSTATUS(status);    
     }
-    if(conf == 2){
-        strcpy(conf_name, "dense");
-    }
-    if(conf == 3){
-        strcpy(conf_name, "custom");
-    }
-    */
-        
-    /*while(c != 'y' && c != 'Y'){*/
-       /* printf("Hai caricato la seguente configurazione\n\n");    
-        printf("_______________________________\n");
-        printf("parametro\t\t\"%s\"\n", conf_name);
-        printf("_______________________________\n");
-        printf("SOURCE \t\t%d\n", *(parameters[SOURCES]));
-        printf("TAXI \t\t%d\n", *(parameters[TAXI]));
-        printf("HOLES \t\t%d\n", (*parameters[HOLES]));
-        printf("CAP MIN \t\t%d\n", *(parameters[CAP_MIN]));
-        printf("CAP MAX \t\t%d\n", *(parameters[CAP_MAX]));
-        printf("TIMEN MIN \t\t%d\n", *(parameters[TIMENSEC_MIN]));
-        printf("TIMEN MAX \t\t%d\n", *(parameters[TIMENSEC_MAX]));
-        printf("TIMEOUT \t\t%d\n", *(parameters[TIMEOUT]));
-        printf("DURANTION \t\t%d\n", *(parameters[DURATION]));
-        printf("TOP CELLS \t\t%d\n", *(parameters[TOP_CELLS]));
-        printf("Confermare?[y/n]\n>> ");
-        c = getchar();*/
-    /*}*/
-/*}*/
+    return -1;
+}
+

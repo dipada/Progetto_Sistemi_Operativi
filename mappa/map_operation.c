@@ -76,46 +76,6 @@ void load_configuration(struct parameters* param, char * filename){
     fclose(fp);
 }
 
-/* stampa la mappa evidenzianziando hole, sources e top_cells */
-void print_map(const map * city_map){
-    int register i,j; 
-    
-    printf("*-");
-    /* stampo la riga iniziale della mappa */
-    for(i=0; i<SO_WIDTH-1; i++){ 
-	    printf("--");
-	}
-	printf("*\n");
-    
-    /* stampo le righe della mappa suddividendole per celle
-       evidenzio SO_HOLES ( X rossa )
-       SO_SOURCES ( S verde )
-       SO_TOP_CELLS ( * YELLOW )  TODO
-     */
-    for(i = 0; i < SO_WIDTH*SO_HEIGHT; i++){
-        if(city_map->m_cell[i].is_hole == 1 || city_map->m_cell[i].is_source == 1){
-            if(city_map->m_cell[i].is_hole == 1){
-                printf("|"CRED"X"CDEFAULT);
-            }else{            
-                printf("|"CGREEN"S"CDEFAULT);
-            }
-        }else{
-            printf("| ");
-        }
-        if((i+1)%SO_WIDTH == 0){ /* se è l'ultima colonna della riga stampa "|" e stampa una riga di separazione */
-            printf("|\n");
-            printf("*-");
-            for(j = 0; j < SO_WIDTH-1; j++){
-                printf("--");
-            }
-            printf("*\n");
-        }
-    }
-    printf("\n");
-    printf("Legends: "CRED"X"CDEFAULT" Holes "CGREEN"S"CDEFAULT" Sources "CYELLOW"*"CDEFAULT" Top_Cells\n");
-}
-
-
 /* Inizializza la mappa, posiziona le SO_HOLES */
 int initialize_map(map *city_map, const struct parameters *param){
     
@@ -148,7 +108,7 @@ void fill_map(map *city_map, const struct parameters *param){
 /* posiziona le n_hole nella mappa. n_cells è il numero totale complessivo di celle */
 int place_hole(map *city_map, int n_hole, int n_cells){
     int rand_position;
-    
+
     while(n_hole > 0){
         
         /* sceglie una cella casualmente */

@@ -66,8 +66,6 @@ typedef struct{
 /* carica la configurazione dal file passato col pathname */
 void load_configuration(struct parameters* param, char * filename);
 
-void print_map(const map * city_map);
-
 /* Inizializza la mappa, posiziona le SO_HOLES */
 int initialize_map(map *city_map, const struct parameters *param);
 

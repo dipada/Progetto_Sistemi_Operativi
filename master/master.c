@@ -11,25 +11,53 @@ Alla fine della simulazione vengono stampati:
 */
 
 #include "master.h"
-#include "../mappa/mappa.h"
 
-void sigint_h(int s){
-    printf("Handler sono %d\n", getpid());
-    fflush(stdout);
-    exit(EXIT_SUCCESS);
-}
+
 
 int main(int argc, char **argv){
 
-   signal(SIGINT, sigint_h);
-    printf("PAD sono %d\n", getpid());
-    if(fork() == 0){
-        if(execl("mappa/map", "map", (char *) NULL)  == -1){
+int status, shmid;
+pid_t pid;
+map *city_map;
+
+/* Creazione shm*/
+if((shmid = shmget(SHMKEY, sizeof(map), IPC_CREAT | 0666)) == -1){
+    ERROR_EXIT
+}
+
+/* crea e inizializza la mappa */
+switch (pid = fork()){
+    case -1:
+        ERROR_EXIT
+
+    case 0: /* ----- codice figlio ----- */
+            /* crea e inizializza la mappa  */
+        if(execl("mappa/map", "map", (char *) NULL)){
             ERROR_EXIT
         }
-    
-    }
-    printf("finito3\n");
-    
+
+    default:
+        wait(&status);
+        if(check_status(status)){
+            fprintf(stderr,"Error: can't generate map\n");
+            exit(EXIT_FAILURE);
+        }
+}
+
+/* attach della shm */
+if( (city_map = (map *) shmat(shmid, NULL, 0)) == (void *) -1){
+    ERROR_EXIT
+}
+
+
+
+/* TODO detach shm e cancellazione */
+
+
+
+
+
+print_map(city_map);
+
 exit(EXIT_SUCCESS);
 }
