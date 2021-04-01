@@ -8,10 +8,10 @@
 #include <unistd.h>
 #include <time.h>
 #include <signal.h>
-
+#include <sys/wait.h>
 
 void handler(int sig){
-    printf("Ricevuto %d %s\n", sig, strsignal(sig));
+    printf("\nPID %d Ricevuto %d %s\n", getpid(), sig, strsignal(sig));
     exit(EXIT_SUCCESS);
 }
 
@@ -24,9 +24,17 @@ int main(){
     sigfillset(&my_mask);
     sa.sa_mask = my_mask;
 
+    
+
+    if(fork() == 0){
     sigaction(SIGINT, &sa, NULL);
-
-
-    for(;;);
+        printf("PID %dn", getpid());
+        fflush(stdout);
+        for(;;);
+    }
+    
+    printf("PARENT %d\n", getpid());
+    wait(NULL);
+    exit(EXIT_SUCCESS);
 
 }
