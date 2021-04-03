@@ -1,4 +1,13 @@
 #include "mappa.h"
+#include "../master/master.h"
+
+/* handler gestione ALARM per creazione mappa */
+void map_signal_handler(int sig){
+    if(sig == SIGALRM){
+        fprintf(stderr, "[map_handler]: timer for generate map expired.\n");
+        exit(EXIT_FAILURE);
+    }
+}
 
 /* carica la configurazione dal file passato col pathname */
 void load_configuration(struct parameters* param, char * filename){
@@ -49,7 +58,7 @@ void load_configuration(struct parameters* param, char * filename){
 
     /* controlli sui parametri*/
     if(param->so_source >= (SO_WIDTH*SO_HEIGHT)){
-        fprintf(stderr,"Error: invalid number of SOURCES (%d) too big. Map has %d cells.\n", param->so_source, (SO_WIDTH*SO_HEIGHT));
+        fprintf(stderr,"Error: invalid number of SOURCES (%d) too big. Map has %d cells, available %d.\n", param->so_source, (SO_WIDTH*SO_HEIGHT), (SO_WIDTH*SO_HEIGHT)-param->so_holes);
         exit(EXIT_FAILURE);
     }
     if(param->so_source <= 0){
@@ -68,23 +77,31 @@ void load_configuration(struct parameters* param, char * filename){
         fprintf(stderr,"Error: TIMENSEC_MIN and TIMENSEC_MAX parameters must be greater than 0. TIMENSEC_MIN must be lower or equal to TIMENSEC_MAX\n");
         exit(EXIT_FAILURE);        
     }
+
+    if(param->so_timensec_min > 999999999 || param->so_timensec_max > 999999999){ 
+        fprintf(stderr,"Error: TIMENSEC_MIN and TIMENSEC_MAX parameters must be lower or equal to 999999999 nsec\n");
+        exit(EXIT_FAILURE);        
+    }
+
     if(param->so_holes > ((SO_WIDTH*SO_HEIGHT)*15)/100 || param->so_holes < 0){
         fprintf(stderr,"Error: numbers of HOLES can't be greater of %d and lower than 0.\n", ((SO_WIDTH*SO_HEIGHT)*15)/100);
         exit(EXIT_FAILURE);
     }
+    if((param->so_holes + param->so_source) > SO_WIDTH*SO_HEIGHT){
+        fprintf(stderr,"Error: SO_HOLES and SO_SOURCE execeed numbers of cells in the map, actually map has [%d] cells\n", SO_WIDTH*SO_HEIGHT);
+        exit(EXIT_FAILURE);
+    }
+    if(param->so_taxi > param->so_cap_min*(SO_WIDTH*SO_HEIGHT-param->so_holes)){
+        fprintf(stderr,"Error: SO_TAXI execeed number of avaible position. max %d\n", param->so_cap_min*(SO_WIDTH*SO_HEIGHT-param->so_holes));
+        exit(EXIT_FAILURE);
+    }
+    if(param->so_top_cells > (SO_WIDTH*SO_HEIGHT-param->so_holes)){
+        fprintf(stderr,"Error: SO_TOP_CELL execeed number of non-hole cells. max %d\n", SO_WIDTH*SO_HEIGHT-param->so_holes);
+        exit(EXIT_FAILURE);
+    }
+
 
     fclose(fp);
-}
-
-/* Inizializza la mappa, posiziona le SO_HOLES */
-int initialize_map(map *city_map, const struct parameters *param){
-    
-    /* inizializzo tutte le celle della mappa */
-    fill_map(city_map,param);
-
-    /* piazza le SO_HOLES celle */
-    place_hole(city_map, param->so_holes, (SO_WIDTH*SO_HEIGHT));
-    return 1;
 }
 
 /* inizializza tutte le celle della mappa */
@@ -93,6 +110,7 @@ void fill_map(map *city_map, const struct parameters *param){
     for(i = 0; i < SO_WIDTH*SO_HEIGHT; i++){
         city_map->m_cell[i].is_hole = 0;
         city_map->m_cell[i].is_source = 0;
+        city_map->m_cell[i].pid_source = -1;
         if((city_map->m_cell[i].cross_time = get_random(param->so_timensec_min,param->so_timensec_max)) == -1){
             fprintf(stderr,"Error fill_map_function File:%s Line:%d: fail to initialize cell cross_time with random number", __FILE__, __LINE__);
             exit(EXIT_FAILURE);
@@ -101,14 +119,15 @@ void fill_map(map *city_map, const struct parameters *param){
             fprintf(stderr,"Error fill_map_function File:%s Line:%d: fail to initialize cell capacity with random number", __FILE__, __LINE__);
             exit(EXIT_FAILURE);
         }
-        city_map->m_cell[i].n_taxi_here = 0;
+        city_map->m_cell[i].n_taxi_here = 0;  
+        city_map->m_cell[i].transitions = 0;
     }
 }
 
 /* posiziona le n_hole nella mappa. n_cells è il numero totale complessivo di celle */
-int place_hole(map *city_map, int n_hole, int n_cells){
+void place_hole(map *city_map, int n_hole, int n_cells){
     int rand_position;
-
+    alarm(1);
     while(n_hole > 0){
         
         /* sceglie una cella casualmente */
@@ -116,7 +135,6 @@ int place_hole(map *city_map, int n_hole, int n_cells){
             fprintf(stderr, "Error: fail to generate random value\n");
             exit(EXIT_FAILURE);
         }
-        
 
         /* cella angolo alto sx */
         if(rand_position == 0){
@@ -203,8 +221,7 @@ int place_hole(map *city_map, int n_hole, int n_cells){
         }   
 
     }
-
-    return 1;
+    alarm(0); /* cancella l'alarm precedente */    
 }
 
 /* genera un numero random in un range [a,b] con a < b */
@@ -219,8 +236,6 @@ int get_random(int a, int b){
     /* (b - a + 1) numeri nell'intervallo [a,b] */
     return (a <= b) ? (unsigned int)(rand()%(b - a + 1) + a) : -1;    
 }
-
-
 
 /* controlla se la cella sinistra a quella data è un hole. Ritorna 1 vero, 0 altrimenti */
 int sx_cell_hole(const map *city_map, const int start_cell){
