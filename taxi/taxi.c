@@ -9,8 +9,6 @@ int main(int argc, char** argv){
     taxi_t taxi;
 
     int shm_map, shm_par, shm_stat, semid, qid , source_pos, i, j, x;
-    
-    int goal_pos, curr_pos;
 
     union semun arg;
     struct sembuf sops[3];
@@ -25,6 +23,8 @@ int main(int argc, char** argv){
     treq.tv_nsec = 0;
     trem.tv_sec = 0;
     trem.tv_nsec = 0;
+    tsop.tv_sec = 0;
+    tsop.tv_nsec = 500;
     
 
     
@@ -179,18 +179,19 @@ int main(int argc, char** argv){
                         exit(EXIT_SUCCESS);
                     }
                 }else{
-                    printf("taxi %ld, posizione %d, prelevata cella di destinazione %ld\n", (long)getpid(), taxi.where_taxi, q.aim_cell);
+                    /*printf("taxi %ld, posizione %d, prelevata cella di destinazione %ld\n", (long)getpid(), taxi.where_taxi, q.aim_cell);*/
 
-                    tsop.tv_sec = 1;
+                    
                        
                     
-                    goal_pos = q.aim_cell;
-                    curr_pos = taxi.where_taxi;
+                    
 
-                    printf("taxi %ld, cur_p %d, goal_pos %d\n", (long)getpid(), curr_pos, goal_pos);
+                    printf("taxi %ld, cur_p %d, goal_pos %ld, j %d\n", (long)getpid(), taxi.where_taxi, q.aim_cell, j);
 
-                    while(curr_pos != goal_pos){
-                        sleep(1);
+                    
+                    while(q.aim_cell != taxi.where_taxi){
+                        
+                        printf("%d sem taxi vale %d sem master vale %d\n", j, semctl(semid, SEM_TAXI, GETVAL), semctl(semid, SEM_MASTER, GETVAL));
                         sops[0].sem_num = SEM_TAXI;
                         sops[0].sem_op = -1;
                         sops[0].sem_flg = 0;
@@ -200,51 +201,14 @@ int main(int argc, char** argv){
                         sops[1].sem_flg = 0;
 
                         if(semtimedop(semid, sops, 2, &tsop) == -1){
-                            if(errno == EAGAIN){
                                 city_map->m_cell[taxi.where_taxi].n_taxi_here -= 1;
-
-                                printf("taxi %ld tempo sops scaduto. Killed\n", (long)getpid());
-                                exit(EXIT_SUCCESS);
-                            }
-                            ERROR_EXIT
+                                ERROR_EXIT
                         }
                     
-                        /*go_cell(city_map, &taxi, q.aim_cell);*/
-                                
-                        if(goal_pos > curr_pos){
-                                
-                            if(goal_pos >= curr_pos + SO_WIDTH){
-                            
-                                /*if(city_map->m_cell[curr_pos+SO_WIDTH].is_hole){
-                                    skip_hole(city_map, taxi, curr_pos+SO_WIDTH);
-                                }*/
-                                /* va alla cella inferiore se la cella dista più di SO_WIDTH posizioni e non è un HOLE */
-                                curr_pos = mv_dw(city_map, &taxi, curr_pos);
-
-                            }else{
-
-                                if((goal_pos%SO_WIDTH) < (curr_pos%SO_WIDTH)){ /* siamo nella riga superiore in celle con resto maggiore di quella di arrivo */
-
-                                    curr_pos = mv_sx(city_map, &taxi, curr_pos);
-                                }else{
-                                    /* la cella è a sinistra delle cella di arrivo */
-                                    curr_pos = mv_dx(city_map, &taxi, curr_pos);
-                                }
-                            }
-                        }
+                        go_cell(city_map, &taxi, q.aim_cell);
                         
-                        if(goal_pos < curr_pos){
-                            if(goal_pos <= curr_pos - SO_WIDTH){
-                                /* va alla cella superiore se la cella dista più di SO_WIDTH posizioni */
-                                curr_pos = mv_up(city_map, &taxi, curr_pos);
-                            }else{
-                                if(goal_pos%SO_WIDTH > curr_pos%SO_WIDTH){
-                                    curr_pos = mv_dx(city_map, &taxi, curr_pos);
-                                }else{
-                                    curr_pos = mv_sx(city_map, &taxi, curr_pos);
-                                }
-                            }
-                        }
+                        
+                        
 
                         sops[0].sem_num = SEM_TAXI;
                         sops[0].sem_op = 1;
@@ -256,15 +220,16 @@ int main(int argc, char** argv){
 
                         if(semtimedop(semid, sops, 2, &tsop) == -1){
                             if(errno == EAGAIN){
-                                printf("taxi %ld tempo sops scaduto. Killed\n", (long)getpid());
+                                printf("taxi %ld tempo sops scaduto release. Killed\n", (long)getpid());
                                 exit(EXIT_SUCCESS);
                             }
                             ERROR_EXIT
-                        }                        
-                    }
+                        }
 
+                        printf("%d sem taxi vale %d sem master vale %d\n", j, semctl(semid, SEM_TAXI, GETVAL), semctl(semid, SEM_MASTER, GETVAL));                  
+                    }
                     printf("Arrivato a destinazione. Il taxi %ld si trova qui %d\n", (long)getpid(), taxi.where_taxi);
-                    city_map->m_cell[ taxi.where_taxi].n_taxi_here -= 1;
+                    city_map->m_cell[taxi.where_taxi].n_taxi_here -= 1;
                     exit(EXIT_SUCCESS);
                 }
                 /* ogni taxi preleva le richieste delle sole celle in cui si trova */

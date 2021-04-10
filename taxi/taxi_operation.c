@@ -91,8 +91,7 @@ int get_random(int a, int b){
 
 void go_cell(map* city_map, taxi_t *taxi, int goal_pos){
     int curr_pos = taxi->where_taxi;
-    while(curr_pos != goal_pos){
-        
+    /*while(curr_pos != goal_pos){*/
         sleep(1);
         if(goal_pos > curr_pos){
 
@@ -128,8 +127,8 @@ void go_cell(map* city_map, taxi_t *taxi, int goal_pos){
                 }
             }
         }
-    }
-    printf("Arrivato a destinazione. Il taxi %ld si trova qui %d\n", (long)getpid(), taxi->where_taxi);
+    /*}*/
+    /*printf("Arrivato a destinazione. Il taxi %ld si trova qui %d\n", (long)getpid(), taxi->where_taxi);*/
 }
 
 

@@ -193,6 +193,11 @@ print_map(city_map);
         ERROR_EXIT
     }
 
+    /* rimozione dei semafori */
+    if(semctl(semid,0, IPC_RMID) == -1){
+        ERROR_EXIT
+    }
+
     exit(EXIT_SUCCESS);
 
 }
