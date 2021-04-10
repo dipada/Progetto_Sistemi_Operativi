@@ -11,6 +11,7 @@ Alla fine della simulazione vengono stampati:
 */
 
 #include "master.h"
+#include "../taxi/taxi.h"
 
 int main(int argc, char **argv){
 
@@ -20,8 +21,10 @@ int main(int argc, char **argv){
     struct parameters *param;
     struct statistic *stat;
 
+    struct timespec tim, res;
+
     union semun arg;
-    struct sembuf sops[3];
+    struct sembuf sops[4];
     
     /* Creazione SHM */
     if((shm_map = shmget(SHMKEY_MAP, sizeof(map), IPC_CREAT | 0666)) == -1){
@@ -38,7 +41,7 @@ int main(int argc, char **argv){
     if((city_map = (map *) shmat(shm_map, NULL, 0)) == (void *) -1){
         ERROR_EXIT
     }
-    if((param = (struct parameters *) shmat(shm_par, NULL, 0)) == (void *) -1){
+    if((param = (struct parameters *) shmat(shm_par, NULL, SHM_RDONLY)) == (void *) -1){
         ERROR_EXIT
     }
     if((stat = (struct statistic *) shmat(shm_stat, NULL, 0)) == (void *) -1){
@@ -53,25 +56,14 @@ int main(int argc, char **argv){
     if((arg.array = (unsigned short *)malloc(sizeof(unsigned short)*3)) == NULL ){
         ERROR_EXIT
     }
-    arg.array[SEM_MASTER] = 0;
-    arg.array[SEM_SOURCE] = 1;
-    arg.array[SEM_TAXI] = 1;
+    arg.array[SEM_MASTER] = 1;
+    arg.array[SEM_TAXI] = 0;
     if(semctl(semid, 0, SETALL, arg.array) == -1){
         ERROR_EXIT
     }
-    /*
-    if(semctl(semid, SEM_MASTER, SETVAL, arg) == -1){
-        ERROR_EXIT
-    }
-    if(semctl(semid, SEM_SOURCE, SETVAL, arg) == -1){
-        ERROR_EXIT
-    }
-    if(semctl(semid, SEM_TAXI, SETVAL, arg) == -1){
-        ERROR_EXIT
-    }*/
-    printf("valore di semmaster %d, source %d, semtaxi %d\n", semctl(semid, SEM_MASTER, GETVAL), semctl(semid, SEM_SOURCE, GETVAL), semctl(semid, SEM_TAXI, GETVAL));
+    free(arg.array);    
 
-
+    /* ----- caricamento parametri, generazione mappa e posizionamento holes ----- */
     switch (pid = fork()){
         case -1:
             ERROR_EXIT
@@ -110,36 +102,65 @@ int main(int argc, char **argv){
             }      
     }
     /*waitpid(0,NULL,0);*/
-
+print_map(city_map);
 
     /* la simulazione parte dopo che sia taxi sia source sono stati creati e inizializzati */
+    /* aspetta che il semaforo master diventi 0, lo incrementa per far partire la simulazione e incrementa il semaforo TAXI */
     
-    /* aspetto che i semafori source e taxi diventano 0 e incremento quello master per far partire la simulazione */
-    printf("master");
-    sops[0].sem_num = SEM_SOURCE;
+    sops[0].sem_num = SEM_MASTER;
     sops[0].sem_op = 0;
     sops[0].sem_flg = 0;
 
-    sops[1].sem_num = SEM_TAXI;
-    sops[1].sem_op = 0;
+    sops[1].sem_num = SEM_MASTER;
+    sops[1].sem_op = 1;
     sops[1].sem_flg = 0;
-    
-    sops[2].sem_num = SEM_MASTER;
+
+    sops[2].sem_num = SEM_TAXI;
     sops[2].sem_op = 1;
     sops[2].sem_flg = 0;
-    if(semop(semid, sops, 3) == -1){
+
+    sops[3].sem_num = SEM_SOURCE;
+    sops[3].sem_op = 1;
+    sops[3].sem_flg = 0;
+
+    if(semop(semid, sops, 4) == -1){
         ERROR_EXIT
     }
+    
+    tim.tv_sec = 0;
+    tim.tv_nsec = 1;
+    res.tv_sec = 0;
+    res.tv_nsec = 0;
 
-    printf("master mi ha sbloccato!\n");
+    
+    nanosleep(&tim, &res);
+    sops[0].sem_num = SEM_MASTER;
+    sops[0].sem_op = -1;
+    sops[0].sem_flg = 0;
+    
+    if(semop(semid, sops, 1) == -1){
+        ERROR_EXIT
+    }
+    printf(CRED"master ha bloccato tutto!"CDEFAULT"\n");
+    /*nanosleep(&tim, NULL);
+    */
+    sops[0].sem_num = SEM_MASTER;
+    sops[0].sem_op = 1;
+    sops[0].sem_flg = 0;
+
+    if(semop(semid, sops, 1) == -1){
+        ERROR_EXIT
+    }
+    
 
 
     /* ogni secondo stampa lo stato di occupazione delle celle */
     /*print_status_cells(city_map);*/
     
-    printf("Richieste totali generate: %d\n", stat->n_request);
+    /*printf("Richieste totali generate: %d\n", stat->n_request);*/
 
     /* stampa la mappa evidenziando HOLE, SOURCE e TOP_CELLS*/
+    wait(&status);
     print_map(city_map);
 
     /*for(;;){
@@ -147,7 +168,7 @@ int main(int argc, char **argv){
         sleep(1);
     }*/
     
-    wait(&status);
+    
     /*print_status_cells(city_map);*/
     
     /* TODO rimozione semafori */

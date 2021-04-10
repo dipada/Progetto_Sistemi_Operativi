@@ -1,7 +1,5 @@
 #ifndef __MAPPA_H__
 #define __MAPPA_H__
-#define _POSIX_C_SOURCE
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,8 +12,8 @@
 #define BUFSIZE 128
 
 /* parametri definiti a tempo di compilazione */
-#define SO_WIDTH 3
-#define SO_HEIGHT 3
+#define SO_WIDTH 2
+#define SO_HEIGHT 2
 
 /* path file di configurazione*/
 #define CONF_FILE ("file_configurazione/conf.txt")

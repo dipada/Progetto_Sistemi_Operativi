@@ -1,7 +1,6 @@
 #ifndef __TAXI_H__
 #define __TAXI_H__
 #include "../mappa/mappa.h"
-#include "../master/master.h"
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
@@ -47,8 +46,43 @@ void place_taxi(map *city_map, taxi_t *taxi);
 /* genera una cella casuale che non sia hole e sia diversa dalla cella passata come argomento */
 int get_aim_cell(map *city_map, int curr_source_pos);
 
+
+/* ----- MOVIMENTO TAXI ----- */
+
+void go_cell(map* city_map, taxi_t *taxi, int goal_pos);
+
+/* sposta il taxi nella cella alla sua destra, ritorna la nuova posizione altrimenti la stessa */
+int mv_dx(map* city_map, taxi_t *taxi, int curr_pos);
+
+/* sposta il taxi nella cella alla sua sinistra, ritorna la nuova posizione altrimenti la stessa */
+int mv_sx(map* city_map, taxi_t *taxi, int curr_pos);
+
+/* sposta il taxi nella cella sotto, ritorna la nuova posizione altrimenti la stessa */
+int mv_dw(map* city_map, taxi_t *taxi, int curr_pos);
+
+/* sposta il taxi nella cella sopra, ritorna la nuova posizione altrimenti la stessa */
+int mv_up(map* city_map, taxi_t *taxi, int curr_pos);
+
+
+
+int skip_bot_hole(map *city_map, taxi_t *taxi);
+int skip_top_hole(map *city_map, taxi_t *taxi);
+int skip_dx_hole(map *city_map, taxi_t *taxi);
+int skip_sx_hole(map *city_map, taxi_t *taxi);
+
+
+
+
+
 /* genera un numero random in un range [a,b] con a < b */
 int get_random(int a, int b);
+
+
+
+
+
+
+
 
 /* inizializza il semaforo a 1 */
 int initSemAvailable(int semId, int semNum);
@@ -61,4 +95,5 @@ int reserveSem(int semId, int semNum);
 
 /* incrementa il semaforo di 1 */
 int releaseSem(int semId, int semNum);
+
 #endif

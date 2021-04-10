@@ -1,7 +1,12 @@
 #ifndef __MASTER_H__
 #define __MASTER_H__
+#ifndef _POSIX_C_SOURCE
+    #define _POSIX_C_SOURCE
+#endif
+#ifndef _GNU_SOURCE
+    #define _GNU_SOURCE
+#endif
 #include "../mappa/mappa.h"
-#include "../taxi/taxi.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

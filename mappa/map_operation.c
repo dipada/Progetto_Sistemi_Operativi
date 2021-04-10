@@ -57,7 +57,7 @@ void load_configuration(struct parameters* param, char * filename){
     }
 
     /* controlli sui parametri*/
-    if(param->so_source >= (SO_WIDTH*SO_HEIGHT)){
+    if(param->so_source > (SO_WIDTH*SO_HEIGHT)){
         fprintf(stderr,"Error: invalid number of SOURCES (%d) too big. Map has %d cells, available %d.\n", param->so_source, (SO_WIDTH*SO_HEIGHT), (SO_WIDTH*SO_HEIGHT)-param->so_holes);
         exit(EXIT_FAILURE);
     }
@@ -83,8 +83,12 @@ void load_configuration(struct parameters* param, char * filename){
         exit(EXIT_FAILURE);        
     }
 
-    if(param->so_holes > ((SO_WIDTH*SO_HEIGHT)*15)/100 || param->so_holes < 0){
-        fprintf(stderr,"Error: numbers of HOLES can't be greater of %d and lower than 0.\n", ((SO_WIDTH*SO_HEIGHT)*15)/100);
+    if((param->so_holes > ((SO_WIDTH*SO_HEIGHT)*15)/100 && param->so_holes > 1 ) || param->so_holes < 0){
+        if(SO_WIDTH*SO_HEIGHT == 4){
+            fprintf(stderr,"Error: numbers of HOLES can't be greater of 1 and lower than 0.\n");    
+        }else{
+            fprintf(stderr,"Error: numbers of HOLES can't be greater of %d and lower than 0.\n", ((SO_WIDTH*SO_HEIGHT)*15)/100);
+        }
         exit(EXIT_FAILURE);
     }
     if((param->so_holes + param->so_source) > SO_WIDTH*SO_HEIGHT){

@@ -89,6 +89,170 @@ int get_random(int a, int b){
     return (a <= b) ? (unsigned int)(rand()%(b - a + 1) + a) : -1;    
 }
 
+void go_cell(map* city_map, taxi_t *taxi, int goal_pos){
+    int curr_pos = taxi->where_taxi;
+    while(curr_pos != goal_pos){
+        
+        sleep(1);
+        if(goal_pos > curr_pos){
+
+            if(goal_pos >= curr_pos + SO_WIDTH){
+
+                /*if(city_map->m_cell[curr_pos+SO_WIDTH].is_hole){
+                    skip_hole(city_map, taxi, curr_pos+SO_WIDTH);
+                }*/
+                /* va alla cella inferiore se la cella dista più di SO_WIDTH posizioni e non è un HOLE */
+                curr_pos = mv_dw(city_map, taxi, curr_pos);
+
+            }else{
+                
+                if((goal_pos%SO_WIDTH) < (curr_pos%SO_WIDTH)){ /* siamo nella riga superiore in celle con resto maggiore di quella di arrivo */
+
+                    curr_pos = mv_sx(city_map, taxi, curr_pos);
+                }else{
+                    /* la cella è a sinistra delle cella di arrivo */
+                    curr_pos = mv_dx(city_map, taxi, curr_pos);
+                }
+            }
+        }
+        if(goal_pos < curr_pos){
+            if(goal_pos <= curr_pos - SO_WIDTH){
+
+                /* va alla cella superiore se la cella dista più di SO_WIDTH posizioni */
+                    curr_pos = mv_up(city_map, taxi, curr_pos);
+            }else{
+                if(goal_pos%SO_WIDTH > curr_pos%SO_WIDTH){
+                    curr_pos = mv_dx(city_map, taxi, curr_pos);
+                }else{
+                    curr_pos = mv_sx(city_map, taxi, curr_pos);
+                }
+            }
+        }
+    }
+    printf("Arrivato a destinazione. Il taxi %ld si trova qui %d\n", (long)getpid(), taxi->where_taxi);
+}
+
+
+/* evita la cella HOLE sotto */
+int skip_bot_hole(map *city_map, taxi_t *taxi){
+    int curr_pos = taxi->where_taxi;
+    if((curr_pos%SO_WIDTH) == SO_WIDTH - 1){ /* celle laterali destra */
+        curr_pos = mv_sx(city_map, taxi, curr_pos);
+    }else{
+        curr_pos = mv_dx(city_map, taxi, curr_pos);
+    }
+    return curr_pos;
+}
+
+/* evita la cella HOLE sopra */
+int skip_top_hole(map *city_map, taxi_t *taxi){
+    int curr_pos = taxi->where_taxi;
+    if((curr_pos%SO_WIDTH) == SO_WIDTH - 1){ /* celle laterali destra */
+        curr_pos = mv_sx(city_map, taxi, curr_pos);
+    }else{
+        curr_pos = mv_dx(city_map, taxi, curr_pos);
+    }
+    return curr_pos;
+}
+
+/* evita la cella HOLE destra */
+int skip_dx_hole(map *city_map, taxi_t *taxi){
+    int curr_pos = taxi->where_taxi;
+    if((curr_pos%SO_WIDTH) == SO_WIDTH - 1){ /* celle laterali destra */
+        curr_pos = mv_sx(city_map, taxi, curr_pos);
+    }else{
+        curr_pos = mv_dx(city_map, taxi, curr_pos);
+    }
+    return curr_pos;
+}
+/* evita la cella HOLE sinistra */
+int skip_sx_hole(map *city_map, taxi_t *taxi){
+    int curr_pos = taxi->where_taxi;
+    if((curr_pos%SO_WIDTH) == SO_WIDTH - 1){ /* celle laterali destra */
+        curr_pos = mv_sx(city_map, taxi, curr_pos);
+    }else{
+        curr_pos = mv_dx(city_map, taxi, curr_pos);
+    }
+    return curr_pos;
+}
+
+
+
+/* sposta il taxi nella cella alla sua destra se non è hole e c'è spazio1, ritorna la nuova posizione altrimenti la stessa */
+int mv_dx(map* city_map, taxi_t *taxi, int curr_pos){
+    int new_pos = curr_pos + 1;
+    
+    if((curr_pos%SO_WIDTH) != SO_WIDTH -1 && city_map->m_cell[new_pos].n_taxi_here < city_map->m_cell[new_pos].capacity && !city_map->m_cell[new_pos].is_hole){
+        /* non è una cella estrema destra. Nella cella destra c'è spazio per il taxi e non è hole */
+        city_map->m_cell[curr_pos].n_taxi_here -= 1;
+        city_map->m_cell[new_pos].n_taxi_here += 1;
+        city_map->m_cell[new_pos].transitions += 1;
+        taxi->pid_cell_taxi = city_map->m_cell[new_pos].pid_source;
+        taxi->where_taxi = new_pos;
+    
+    printf("Il taxi %ld è andato a dx da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);
+
+    return new_pos;
+    }
+    return curr_pos;    
+}
+
+/* sposta il taxi nella cella alla sua sinistra, ritorna la nuova posizione altrimenti la stessa */
+int mv_sx(map* city_map, taxi_t *taxi, int curr_pos){
+    int new_pos = curr_pos - 1;
+    
+    if((curr_pos%SO_WIDTH) != 0 && city_map->m_cell[new_pos].n_taxi_here < city_map->m_cell[new_pos].capacity && !city_map->m_cell[new_pos].is_hole){
+        /* non è una cella estrema sinistra. Nella cella sinistra c'è spazio per il taxi e non è hole */
+        city_map->m_cell[curr_pos].n_taxi_here -= 1;
+        city_map->m_cell[new_pos].n_taxi_here += 1;
+        city_map->m_cell[new_pos].transitions += 1;
+        taxi->pid_cell_taxi = city_map->m_cell[new_pos].pid_source;
+        taxi->where_taxi = new_pos;
+    
+    printf("Il taxi %ld è andato a sx da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);
+    return new_pos;
+    }
+    return curr_pos;    
+}
+
+/* sposta il taxi nella cella sotto, ritorna la nuova posizione altrimenti la stessa */
+int mv_dw(map* city_map, taxi_t *taxi, int curr_pos){
+    int new_pos = curr_pos + SO_WIDTH;
+    
+    if(curr_pos < (SO_WIDTH*SO_HEIGHT)-SO_WIDTH && city_map->m_cell[new_pos].n_taxi_here < city_map->m_cell[new_pos].capacity && !city_map->m_cell[new_pos].is_hole){
+        /* non è una cella estrema inferiore.Nella cella inferiore c'è spazio per il taxi e non è hole */
+        city_map->m_cell[curr_pos].n_taxi_here -= 1;
+        city_map->m_cell[new_pos].n_taxi_here += 1;
+        city_map->m_cell[new_pos].transitions += 1;
+        taxi->pid_cell_taxi = city_map->m_cell[new_pos].pid_source;
+        taxi->where_taxi = new_pos;
+    
+    printf("Il taxi %ld è andato giu da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);
+    return new_pos;
+    }
+    return curr_pos;    
+}
+
+/* sposta il taxi nella cella sopra, ritorna la nuova posizione altrimenti la stessa */
+int mv_up(map* city_map, taxi_t *taxi, int curr_pos){
+    int new_pos = curr_pos - SO_WIDTH;
+    
+    if(curr_pos > SO_WIDTH - 1 && city_map->m_cell[new_pos].n_taxi_here < city_map->m_cell[new_pos].capacity && !city_map->m_cell[new_pos].is_hole){
+        /* non è una cella estrema destra. Nella cella superiore c'è spazio per il taxi e non è hole */
+        city_map->m_cell[curr_pos].n_taxi_here -= 1;
+        city_map->m_cell[new_pos].n_taxi_here += 1;
+        city_map->m_cell[new_pos].transitions += 1;
+        taxi->pid_cell_taxi = city_map->m_cell[new_pos].pid_source;
+        taxi->where_taxi = new_pos;
+    
+
+    printf("Il taxi %ld è andato a su da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);
+    return new_pos;
+    }
+    return curr_pos;
+}
+
+
 /* inizializza il semaforo a 1
 int initSemAvailable(int semid, int semNum){
     union semun arg;
