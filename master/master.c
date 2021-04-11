@@ -21,7 +21,11 @@ int main(int argc, char **argv){
     struct parameters *param;
     struct statistic *stat;
 
-    
+    struct timespec trstat, trestat;
+
+time_t rawtime;
+  struct tm * timeinfo;
+
 
     union semun arg;
     struct sembuf sops[4];
@@ -126,9 +130,34 @@ print_map(city_map);
     if(semop(semid, sops, 4) == -1){
         ERROR_EXIT
     }
-    printf("SBLOCCO AVVENUTO\n");
-    printf("MASTER mastersem vale %d, semsource %d, semtaxi %d\n", semctl(semid, SEM_MASTER, GETVAL), semctl(semid, SEM_SOURCE, GETVAL), semctl(semid, SEM_TAXI, GETVAL));
+
+    trstat.tv_sec = 5;
+    trstat.tv_nsec = 0;
+    trestat.tv_sec = 0;
+    trestat.tv_sec = 0;
+    for(;;){
+        sops[0].sem_num = SEM_MASTER;
+        sops[0].sem_op = -1;
+        sops[0].sem_flg = 0;
+        if(semop(semid, sops, 1) == -1){
+            ERROR_EXIT
+        }
+        print_status_cells(city_map);
+         time ( &rawtime );
+  timeinfo = localtime ( &rawtime );
+         printf ( "Current local time and date: %s", asctime (timeinfo) );
+         sleep(1);
+        sops[0].sem_num = SEM_MASTER;
+        sops[0].sem_op = 1;
+        sops[0].sem_flg = 0;
+        if(semop(semid, sops, 1) == -1){
+            ERROR_EXIT
+        }
+        nanosleep(&trstat, &trestat);
+    }
     
+    printf("SBLOCCO AVVENUTO\n");
+
     /* ogni secondo stampa lo stato di occupazione delle celle */
     /*print_status_cells(city_map);*/
     
