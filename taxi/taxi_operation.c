@@ -90,45 +90,45 @@ int get_random(int a, int b){
 }
 
 void go_cell(map* city_map, taxi_t *taxi, int goal_pos){
+    
     int curr_pos = taxi->where_taxi;
-    /*while(curr_pos != goal_pos){*/
-        sleep(1);
-        if(goal_pos > curr_pos){
+    
+    if(goal_pos > curr_pos){
+        
+        if(goal_pos >= curr_pos + SO_WIDTH){
+            
+            /* va alla cella inferiore se la cella dista più di SO_WIDTH posizioni e non è un HOLE */
+            curr_pos = mv_dw(city_map, taxi, curr_pos);
 
-            if(goal_pos >= curr_pos + SO_WIDTH){
-
-                /*if(city_map->m_cell[curr_pos+SO_WIDTH].is_hole){
-                    skip_hole(city_map, taxi, curr_pos+SO_WIDTH);
-                }*/
-                /* va alla cella inferiore se la cella dista più di SO_WIDTH posizioni e non è un HOLE */
-                curr_pos = mv_dw(city_map, taxi, curr_pos);
-
+        }else{
+            
+            if((goal_pos%SO_WIDTH) < (curr_pos%SO_WIDTH)){ /* siamo nella riga superiore in celle con resto maggiore di quella di arrivo */
+            
+                curr_pos = mv_sx(city_map, taxi, curr_pos);
             }else{
                 
-                if((goal_pos%SO_WIDTH) < (curr_pos%SO_WIDTH)){ /* siamo nella riga superiore in celle con resto maggiore di quella di arrivo */
-
-                    curr_pos = mv_sx(city_map, taxi, curr_pos);
-                }else{
-                    /* la cella è a sinistra delle cella di arrivo */
-                    curr_pos = mv_dx(city_map, taxi, curr_pos);
-                }
+                /* la cella è a sinistra delle cella di arrivo */
+                curr_pos = mv_dx(city_map, taxi, curr_pos);
             }
         }
-        if(goal_pos < curr_pos){
-            if(goal_pos <= curr_pos - SO_WIDTH){
+    }
+    if(goal_pos < curr_pos){
+        
+        if(goal_pos <= curr_pos - SO_WIDTH){
 
-                /* va alla cella superiore se la cella dista più di SO_WIDTH posizioni */
-                    curr_pos = mv_up(city_map, taxi, curr_pos);
+            /* va alla cella superiore se la cella dista più di SO_WIDTH posizioni */
+                curr_pos = mv_up(city_map, taxi, curr_pos);
+        }else{
+            if(goal_pos%SO_WIDTH > curr_pos%SO_WIDTH){
+                curr_pos = mv_dx(city_map, taxi, curr_pos);
             }else{
-                if(goal_pos%SO_WIDTH > curr_pos%SO_WIDTH){
-                    curr_pos = mv_dx(city_map, taxi, curr_pos);
-                }else{
-                    curr_pos = mv_sx(city_map, taxi, curr_pos);
-                }
+                curr_pos = mv_sx(city_map, taxi, curr_pos);
             }
         }
-    /*}*/
-    /*printf("Arrivato a destinazione. Il taxi %ld si trova qui %d\n", (long)getpid(), taxi->where_taxi);*/
+    }
+
+    taxi->where_taxi = curr_pos;
+    
 }
 
 

@@ -21,7 +21,7 @@ int main(int argc, char **argv){
     struct parameters *param;
     struct statistic *stat;
 
-    struct timespec tim, res;
+    
 
     union semun arg;
     struct sembuf sops[4];
@@ -111,7 +111,7 @@ print_map(city_map);
     sops[0].sem_op = 0;
     sops[0].sem_flg = 0;
 
-    sops[1].sem_num = SEM_MASTER;
+    sops[1].sem_num = SEM_SOURCE;
     sops[1].sem_op = 1;
     sops[1].sem_flg = 0;
 
@@ -119,41 +119,16 @@ print_map(city_map);
     sops[2].sem_op = 1;
     sops[2].sem_flg = 0;
 
-    sops[3].sem_num = SEM_SOURCE;
+    sops[3].sem_num = SEM_MASTER;
     sops[3].sem_op = 1;
     sops[3].sem_flg = 0;
 
     if(semop(semid, sops, 4) == -1){
         ERROR_EXIT
     }
+    printf("SBLOCCO AVVENUTO\n");
+    printf("MASTER mastersem vale %d, semsource %d, semtaxi %d\n", semctl(semid, SEM_MASTER, GETVAL), semctl(semid, SEM_SOURCE, GETVAL), semctl(semid, SEM_TAXI, GETVAL));
     
-    tim.tv_sec = 0;
-    tim.tv_nsec = 1;
-    res.tv_sec = 0;
-    res.tv_nsec = 0;
-
-    
-    nanosleep(&tim, &res);
-    sops[0].sem_num = SEM_MASTER;
-    sops[0].sem_op = -1;
-    sops[0].sem_flg = 0;
-    
-    if(semop(semid, sops, 1) == -1){
-        ERROR_EXIT
-    }
-    printf(CRED"master ha bloccato tutto!"CDEFAULT"\n");
-    /*nanosleep(&tim, NULL);
-    */
-    sops[0].sem_num = SEM_MASTER;
-    sops[0].sem_op = 1;
-    sops[0].sem_flg = 0;
-
-    if(semop(semid, sops, 1) == -1){
-        ERROR_EXIT
-    }
-    
-
-
     /* ogni secondo stampa lo stato di occupazione delle celle */
     /*print_status_cells(city_map);*/
     

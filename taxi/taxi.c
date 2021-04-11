@@ -8,7 +8,7 @@ int main(int argc, char** argv){
     struct statistic *stat;
     taxi_t taxi;
 
-    int shm_map, shm_par, shm_stat, semid, qid , source_pos, i, j, x;
+    int shm_map, shm_par, shm_stat, semid, qid , source_pos, i, j, x, k;
 
     union semun arg;
     struct sembuf sops[3];
@@ -18,13 +18,15 @@ int main(int argc, char** argv){
     /*pid_t pid;*/
 
     /* per nanosleep */
-    struct timespec treq, trem, tsop;
+    struct timespec treq, trem, tcell, trcell, tsop;
     treq.tv_sec = 0;
     treq.tv_nsec = 0;
     trem.tv_sec = 0;
     trem.tv_nsec = 0;
-    tsop.tv_sec = 0;
-    tsop.tv_nsec = 500;
+    tsop.tv_sec = 1;
+    tsop.tv_nsec = 0;
+    tcell.tv_sec = 0;
+    tcell.tv_nsec = 0;
     
 
     
@@ -75,73 +77,63 @@ int main(int argc, char** argv){
             case 0: /* ----- codice figlio -----  */
                 /* processo SOURCE si associa ad una cella libera che non sia HOLE */
                 source_pos = place_source(city_map, 1, SO_WIDTH*SO_HEIGHT);
-                
-                
-                /* in attesa del master che autorizza l'avvio della simulazione */
-                sops[0].sem_num = SEM_SOURCE;
-                sops[0].sem_op = -1;
-                sops[0].sem_flg = 0;
-   
-                /* incremento il semaforo source e decremento master */
-                sops[1].sem_num = SEM_MASTER;
-                sops[1].sem_op = -1;
-                sops[1].sem_flg = 0;
 
-                if(semop(semid, sops, 2) == -1){
-                    ERROR_EXIT
-                }
-                                
-                /* genera richieste taxi con un intervallo variabile tra 1 nsec - 1 sec */
-                treq.tv_nsec = get_random(1, 1);
-                if(nanosleep(&treq, &trem) == -1){
-                    ERROR_EXIT
-                }                    
+                for(k = 0; k < 1; k++){
                 
-                /* preparazione della richiesta */
-                q.start_cell = (long)getpid();
-                /* genera una posizione che sia una cella diversa dall'attuale e non sia hole */
-                q.aim_cell = get_aim_cell(city_map, source_pos);
-                
-                if(msgsnd(qid, &q, sizeof(struct request_queue) - sizeof(long), 0) == -1){
-                    ERROR_EXIT
-                }
-                printf("SOURCE %ld richiesta effettuata. Partenza da %d arrivo %ld\n", (long)getpid(), source_pos, q.aim_cell);
+                    /* in attesa del master che autorizza l'avvio della simulazione */
+                    sops[0].sem_num = SEM_SOURCE;
+                    sops[0].sem_op = -1;
+                    sops[0].sem_flg = 0;
+    
+                    /* incremento il semaforo source e decremento master */
+                    sops[1].sem_num = SEM_MASTER;
+                    sops[1].sem_op = -1;
+                    sops[1].sem_flg = 0;
 
-                
+                    if(semop(semid, sops, 1) == -1){
+                        ERROR_EXIT
+                    }
 
+                    /* genera richieste taxi con un intervallo variabile tra 1 nsec - 1 sec */
+                    treq.tv_nsec = get_random(1, 1);
+                    if(nanosleep(&treq, &trem) == -1){
+                        ERROR_EXIT
+                    }                    
                 
+                    /* preparazione della richiesta */
+                    q.start_cell = (long)getpid();
+                    /* genera una posizione che sia una cella diversa dall'attuale e non sia hole */
+                    q.aim_cell = get_aim_cell(city_map, source_pos);
                 
-                /* ----- SEZIONE CRITICA ----- */
-                
-                /* registrazione dell'avvenuta creazione della richiesta */
-                
-                
+                    if(msgsnd(qid, &q, sizeof(struct request_queue) - sizeof(long), 0) == -1){
+                        ERROR_EXIT
+                    }
+
                     
-
-                stat->n_request +=1;
-
+                    /* ----- SEZIONE CRITICA ----- */
                 
+                    /* registrazione dell'avvenuta creazione della richiesta */                
+                    
+                    
+                    stat->n_request +=1;               
+
+                    /* ----- FINE SEZIONE CRITITCA ----- */
+
+                    sops[0].sem_num = SEM_MASTER;
+                    sops[0].sem_op = 1;
+                    sops[0].sem_flg = 0;
+
+                    sops[1].sem_num = SEM_SOURCE;
+                    sops[1].sem_op = 1;
+                    sops[1].sem_flg = 0;
+
+                    if(semop(semid, sops, 2) == -1){
+                        ERROR_EXIT
+                    }
                 
-
-                sops[0].sem_num = SEM_MASTER;
-                sops[0].sem_op = 1;
-                sops[0].sem_flg = 0;
-
-                sops[1].sem_num = SEM_SOURCE;
-                sops[1].sem_op = 1;
-                sops[1].sem_flg = 0;
-
-                if(semop(semid, sops, 2) == -1){
-                    ERROR_EXIT
                 }
-                
-                /* ----- FINE SEZIONE CRITITCA ----- */
 
                 exit(EXIT_SUCCESS);
-
-            /*default:
-            wait(NULL);*/
-            
         }
     }
     
@@ -153,93 +145,86 @@ int main(int argc, char** argv){
             case 0:
                 /* i taxi si posizionano casualmente */
                 place_taxi(city_map, &taxi);
-                
+                                
                 sleep(1);
-                /* in attesa del master che autorizza l'avvio della simulazione */
                 
-
+                for(k = 0; k < 10; k++){
+                    
+                    /* in attesa del master che autorizza l'avvio della simulazione */
+                    sops[0].sem_num = SEM_TAXI;
+                    sops[0].sem_op = -1;
+                    sops[0].sem_flg = 0;
                 
-                
-                
-                
-
-                /* ----- SEZIONE CRITICA ----- */
-                /*printf("TAXI %ld\n",(long)getpid());*/
-
-                /* TODO SEMAFORI e TIMER TAXI*/
-                
-                /* ricerca di una richiesta da eseguire */
-                /* se il taxi si trova in una cella SOURCE con richieste attive, preleva quella richiesta */
-                if(msgrcv(qid, &q, sizeof(struct request_queue)- sizeof(long), taxi.pid_cell_taxi, IPC_NOWAIT) == -1){
-                    if(errno != ENOMSG){
+                    sops[1].sem_num = SEM_MASTER;
+                    sops[1].sem_op = -1;
+                    sops[1].sem_flg = 0;
+                    if(semtimedop(semid, sops, 2, &tsop) == -1){
                         ERROR_EXIT
-                    }else{
-                        printf("taxi %ld era in %d, uscito\n", (long)getpid(), taxi.where_taxi);
-                        city_map->m_cell[taxi.where_taxi].n_taxi_here -= 1;
-                        exit(EXIT_SUCCESS);
                     }
-                }else{
-                    /*printf("taxi %ld, posizione %d, prelevata cella di destinazione %ld\n", (long)getpid(), taxi.where_taxi, q.aim_cell);*/
+                
 
-                    
-                       
-                    
-                    
+                    /* ----- SEZIONE CRITICA ----- */
 
-                    printf("taxi %ld, cur_p %d, goal_pos %ld, j %d\n", (long)getpid(), taxi.where_taxi, q.aim_cell, j);
-
-                    
-                    while(q.aim_cell != taxi.where_taxi){
-                        
-                        printf("%d sem taxi vale %d sem master vale %d\n", j, semctl(semid, SEM_TAXI, GETVAL), semctl(semid, SEM_MASTER, GETVAL));
-                        sops[0].sem_num = SEM_TAXI;
-                        sops[0].sem_op = -1;
-                        sops[0].sem_flg = 0;
-
-                        sops[1].sem_num = SEM_MASTER;
-                        sops[1].sem_op = -1;
-                        sops[1].sem_flg = 0;
-
-                        if(semtimedop(semid, sops, 2, &tsop) == -1){
-                                city_map->m_cell[taxi.where_taxi].n_taxi_here -= 1;
-                                ERROR_EXIT
-                        }
-                    
-                        go_cell(city_map, &taxi, q.aim_cell);
-                        
-                        
-                        
-
-                        sops[0].sem_num = SEM_TAXI;
-                        sops[0].sem_op = 1;
-                        sops[0].sem_flg = 0;
-
-                        sops[1].sem_num = SEM_MASTER;
-                        sops[1].sem_op = 1;
-                        sops[1].sem_flg = 0;
-
-                        if(semtimedop(semid, sops, 2, &tsop) == -1){
-                            if(errno == EAGAIN){
-                                printf("taxi %ld tempo sops scaduto release. Killed\n", (long)getpid());
-                                exit(EXIT_SUCCESS);
-                            }
+                    /* TODO SEMAFORI e TIMER TAXI*/
+                
+                    /* ricerca di una richiesta da eseguire */
+                    /* se il taxi si trova in una cella SOURCE con richieste attive, preleva quella richiesta */
+                    if(msgrcv(qid, &q, sizeof(struct request_queue)- sizeof(long), taxi.pid_cell_taxi, IPC_NOWAIT) == -1){
+                        if(errno != ENOMSG){
                             ERROR_EXIT
+                        }else{
+                            printf("taxi %ld era in %d, uscito\n", (long)getpid(), taxi.where_taxi);
+                            city_map->m_cell[taxi.where_taxi].n_taxi_here -= 1;
+                            exit(EXIT_SUCCESS);
                         }
+                    }else{
+                        
+                        printf("taxi %ld cur_pos %d, dest %ld\n", (long)getpid(), taxi.where_taxi, q.aim_cell);
 
-                        printf("%d sem taxi vale %d sem master vale %d\n", j, semctl(semid, SEM_TAXI, GETVAL), semctl(semid, SEM_MASTER, GETVAL));                  
+                        
+                        printf("taxi %ld, LINE %d\n",(long)getpid(), __LINE__);
+
+                        while(q.aim_cell != taxi.where_taxi){
+                            /* se non si muove muore */
+                                                    
+                            /*tcell.tv_nsec = city_map->m_cell[taxi.where_taxi].cross_time;*/
+                            tcell.tv_nsec = 2;
+
+                            printf("taxi %ld è qui %d prima di gocell, deve andare a %ld\n", (long)getpid(), taxi.where_taxi, q.aim_cell);
+                            nanosleep(&tcell, &trcell);
+                            /*printf("prima go cell Txi %ld è qui %d\n", (long)getpid(), taxi.where_taxi);*/
+                            go_cell(city_map, &taxi, q.aim_cell);
+                            printf("taxi %ld è qui %d dopo di gocell\n", (long)getpid(), taxi.where_taxi);
+                            /*printf("dopo go cell Txi %ld è qui %d\n", (long)getpid(), taxi.where_taxi);*/
+
+                        
+                        }
+                        
+                        printf("Arrivato a destinazione. Il taxi %ld si trova qui %d\n", (long)getpid(), taxi.where_taxi);
+                        city_map->m_cell[taxi.where_taxi].n_taxi_here -= 1;
+                        stat->success_req += 1;
+                    
                     }
-                    printf("Arrivato a destinazione. Il taxi %ld si trova qui %d\n", (long)getpid(), taxi.where_taxi);
-                    city_map->m_cell[taxi.where_taxi].n_taxi_here -= 1;
-                    exit(EXIT_SUCCESS);
-                }
-                /* ogni taxi preleva le richieste delle sole celle in cui si trova */
+                    
+                    printf("taxi %ld, LINE %d\n",(long)getpid(), __LINE__);
+                    /* ogni taxi preleva le richieste delle sole celle in cui si trova */    
                 
+                    sops[0].sem_num = SEM_MASTER;
+                    sops[0].sem_op = 1;
+                    sops[0].sem_flg = 0;
+
+                    sops[1].sem_num = SEM_TAXI;
+                    sops[1].sem_op = 1;
+                    sops[1].sem_flg = 0;
+
+                    if(semop(semid, sops, 2) == -1){
+                        ERROR_EXIT
+                    }
+
+                    printf("taxi %ld, LINE %d\n",(long)getpid(), __LINE__);
+                }/* FOR PARENTESI */
+                exit(EXIT_SUCCESS);
                 
-                
-                
-                
-            /*default:
-                wait(NULL);*/
         }
     }
 
@@ -273,6 +258,8 @@ int main(int argc, char** argv){
     for(i = 0; i < param->so_source; i++){
         wait(NULL);
     }
+
+    printf("n request %d, SUCCESS REQUEST = %d ABORTED = %d\n",stat->n_request, stat->success_req, stat->aborted_req);
 
     /* rimuove la coda di messaggi */
     if(msgctl(qid, IPC_RMID, NULL)){

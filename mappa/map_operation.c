@@ -103,6 +103,10 @@ void load_configuration(struct parameters* param, char * filename){
         fprintf(stderr,"Error: SO_TOP_CELL execeed number of non-hole cells. max %d\n", SO_WIDTH*SO_HEIGHT-param->so_holes);
         exit(EXIT_FAILURE);
     }
+    if(param->so_timeout <= 0 || param->so_timeout > param->so_duration ){
+        fprintf(stderr,"Error: SO_TIMEOUT must be almost 1 sec and lower than SO_DURATION\n");
+        exit(EXIT_FAILURE);
+    }
 
 
     fclose(fp);
