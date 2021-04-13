@@ -13,6 +13,28 @@ Alla fine della simulazione vengono stampati:
 #include "master.h"
 #include "../taxi/taxi.h"
 
+static int t = 1;
+
+void master_handler(int sig){
+    if(sig == SIGALRM){ /* scaduto il tempo della simulazione */
+        
+        printf("%s ricevuto SIGALRM\n", __FILE__);
+        
+        kill(0, SIGTERM);
+        return;
+    }
+    if(sig == SIGTERM){
+        printf("%s Ricevuto SIGTERM\n", __FILE__);
+        t = 0;
+        return;
+    }
+    if(sig == SIGINT){
+        printf("%s ricevuto SIGINT pid %ld\n", __FILE__, (long)getpid());
+    }
+}
+
+
+
 int main(int argc, char **argv){
 
     int status, shm_map, shm_par, shm_stat, semid;
@@ -29,6 +51,23 @@ time_t rawtime;
 
     union semun arg;
     struct sembuf sops[4];
+
+    struct sigaction sa, sia;
+    sigset_t my_mask;
+
+    sa.sa_handler = &master_handler;
+    sa.sa_flags = 0;
+    sigfillset(&my_mask);
+    sa.sa_mask = my_mask;
+
+    sia.sa_handler = SIG_IGN;
+    sia.sa_flags = 0;
+    sigfillset(&my_mask);
+    sia.sa_mask = my_mask;
+    
+    sigaction(SIGALRM, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGINT, &sia, NULL);
     
     /* Creazione SHM */
     if((shm_map = shmget(SHMKEY_MAP, sizeof(map), IPC_CREAT | 0666)) == -1){
@@ -131,22 +170,26 @@ print_map(city_map);
         ERROR_EXIT
     }
 
-    trstat.tv_sec = 5;
+    alarm(param->so_duration);
+
+    trstat.tv_sec = 3;
     trstat.tv_nsec = 0;
     trestat.tv_sec = 0;
     trestat.tv_sec = 0;
-    for(;;){
+    
+    while(t){
         sops[0].sem_num = SEM_MASTER;
         sops[0].sem_op = -1;
         sops[0].sem_flg = 0;
         if(semop(semid, sops, 1) == -1){
             ERROR_EXIT
         }
-        print_status_cells(city_map);
+        /* ogni secondo stampa lo stato di occupazione delle celle */
+        /*print_status_cells(city_map);*/
          time ( &rawtime );
   timeinfo = localtime ( &rawtime );
          printf ( "Current local time and date: %s", asctime (timeinfo) );
-         sleep(1);
+         
         sops[0].sem_num = SEM_MASTER;
         sops[0].sem_op = 1;
         sops[0].sem_flg = 0;
@@ -156,10 +199,10 @@ print_map(city_map);
         nanosleep(&trstat, &trestat);
     }
     
-    printf("SBLOCCO AVVENUTO\n");
+    printf("TEMPO FINITO\n");
 
-    /* ogni secondo stampa lo stato di occupazione delle celle */
-    /*print_status_cells(city_map);*/
+    
+    
     
     /*printf("Richieste totali generate: %d\n", stat->n_request);*/
 

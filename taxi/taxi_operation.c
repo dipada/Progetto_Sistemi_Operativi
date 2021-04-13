@@ -15,12 +15,12 @@ void initialize_stat(struct statistic *stat){
     stat->n_high_req = 0;
 }
 
-/* posiziona celle SO_SOURCE e associa il pid del processo */
-int place_source(map *city_map, int n_source, int n_cells){
-    int rand_position;
-    while(n_source > 0){
+/* posiziona celle SO_SOURCE e associa il pid del processo, registra nel vettore source la posizione della source */
+int place_source(map *city_map){
+    int rand_position, i = 1;
+    while(i > 0){
         /* sceglie una cella casualmente */
-        if((rand_position = get_random(0,(n_cells-1))) == -1){
+        if((rand_position = get_random(0,(SO_WIDTH*SO_HEIGHT-1))) == -1){
             fprintf(stderr, "Error: fail to generate random value for source\n");
             exit(EXIT_FAILURE);
         }
@@ -29,7 +29,7 @@ int place_source(map *city_map, int n_source, int n_cells){
             /* la cella non è un hole e non è un source */
             city_map->m_cell[rand_position].is_source = 1;
             city_map->m_cell[rand_position].pid_source = (long)getpid();
-            n_source--;
+            i--;
         }
     }
     return rand_position;
@@ -76,6 +76,39 @@ int get_aim_cell(map *city_map, int curr_source_pos){
 }
 
 
+/* in base alla posizione del taxi cerca una cella source e ritorna la posizione */
+int search_source(map *city_map, int cur_pos){
+    int source_pos;
+    
+    if(cur_pos > (SO_WIDTH*SO_HEIGHT)/2 || cur_pos == SO_WIDTH*SO_HEIGHT - 1){
+        /* cerca a sinistra */
+        while(!city_map->m_cell[cur_pos].is_source && cur_pos > 0){
+            cur_pos -= 1;
+        }
+        /* se non ha ancora trovato la cella cerca nell'altro verso */
+        if(!city_map->m_cell[cur_pos].is_source){
+            while(!city_map->m_cell[(SO_WIDTH*SO_HEIGHT)/2 + 1].is_source && cur_pos < SO_WIDTH*SO_HEIGHT-1){
+                cur_pos += 1;
+            }
+        }
+        source_pos = cur_pos;
+
+    }else{
+        /* cella <= della metà, cerca a destra */
+        while(!city_map->m_cell[cur_pos].is_source && cur_pos < SO_WIDTH*SO_HEIGHT -1 ){
+            cur_pos += 1;
+        }
+        if(!city_map->m_cell[cur_pos].is_source){
+            while(!city_map->m_cell[(SO_WIDTH*SO_HEIGHT)/2 - 1].is_source && cur_pos > 0){
+                cur_pos -= 1;
+            }
+        }
+        source_pos = cur_pos;
+    }
+    return source_pos;
+    
+}
+
 /* genera un numero random in un range [a,b] con a < b */
 int get_random(int a, int b){
     static int flag_srand = 0; 
@@ -89,6 +122,7 @@ int get_random(int a, int b){
     return (a <= b) ? (unsigned int)(rand()%(b - a + 1) + a) : -1;    
 }
 
+/* sposta il taxi di una posizione verso la cella indicata */
 void go_cell(map* city_map, taxi_t *taxi, int goal_pos){
     
     int curr_pos = taxi->where_taxi;

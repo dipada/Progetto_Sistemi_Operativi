@@ -37,8 +37,8 @@ struct statistic{
 /* inizializza la struttura delle statistiche */
 void initialize_stat(struct statistic *stat);
 
-/* posiziona celle SO_SOURCE e associa il pid del processo alla cella. Ritorna la poszione della cella SOURCE*/
-int place_source(map *city_map, int n_source, int n_cells);
+/* posiziona celle SO_SOURCE e associa il pid del processo alla cella. Ritorna la posizione della cella SOURCE*/
+int place_source(map *city_map);
 
 /* posiziona il TAXI casualmente sulla mappa */
 void place_taxi(map *city_map, taxi_t *taxi);
@@ -50,6 +50,9 @@ int get_aim_cell(map *city_map, int curr_source_pos);
 /* ----- MOVIMENTO TAXI ----- */
 
 void go_cell(map* city_map, taxi_t *taxi, int goal_pos);
+
+/* in base alla posizione del taxi cerca una cella source e ritorna la posizione */
+int search_source(map *city_map, int cur_pos);
 
 /* sposta il taxi nella cella alla sua destra, ritorna la nuova posizione altrimenti la stessa */
 int mv_dx(map* city_map, taxi_t *taxi, int curr_pos);
