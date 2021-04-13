@@ -53,6 +53,7 @@ void taxi_handler(int sig){
             if(semop(semid, sops, 1) == -1){
                 ERROR_EXIT
             }
+            return;
         }
     }
 }
@@ -210,7 +211,7 @@ int main(int argc, char** argv){
                     
                     stat->n_request +=1;      
 
-                    printf("Source %ld richiesta partenza %d di arrivo a %ld registrata\n", (long)getpid(), source_pos, q.aim_cell);
+                    /*printf("Source %ld richiesta partenza %d di arrivo a %ld registrata\n", (long)getpid(), source_pos, q.aim_cell);*/
                     /* ----- FINE SEZIONE CRITITCA ----- */
                     
                     sops[0].sem_num = SEM_MASTER;
@@ -261,21 +262,18 @@ int main(int argc, char** argv){
                 place_taxi(city_map, &taxi);
                 
                 while(t){
+                    printf("inizio while t\n");
                     printf("Taxi pid %ld, è in cella %ld num %d\n", (long)getpid(), taxi.pid_cell_taxi, taxi.where_taxi);    
                     
                     sops[0].sem_num = SEM_TAXI;
                     sops[0].sem_op = -1;
                     sops[0].sem_flg = 0;
-                    if(semop(semid, sops, 1) == -1){
-                        if(errno == EINTR){
-                            exit(EXIT_FAILURE);
-                        }else{
-                            ERROR_EXIT
-                        }
+                    if(semop(semid, sops, 1) == -1){                        
+                        ERROR_EXIT
                     }
                     
                     printf("taxi %ld suorcecell = %d\n", (long)getpid(), city_map->m_cell[taxi.where_taxi].is_source);
-                    /*printf("taxi %ld !suorcecell = %d\n", (long)getpid(),!city_map->m_cell[taxi.where_taxi].is_source);*/
+                    printf("taxi %ld !suorcecell = %d\n", (long)getpid(),!city_map->m_cell[taxi.where_taxi].is_source);
                     
                  /*   if(!city_map->m_cell[taxi.where_taxi].is_source){
                           verificare che la cella in cui è il taxi sia source altrimenti raggiunge una cella source 
@@ -338,26 +336,35 @@ int main(int argc, char** argv){
                     }
                     
 
-                    printf("taxi %ld curp %d arrivo %ld\n",(long)getpid(), taxi.where_taxi, q.aim_cell);
+                    printf("taxi %ld prelevata richiesta. Partenza %d arrivo %ld\n",(long)getpid(), taxi.where_taxi, q.aim_cell);
                     
                     /* esegue la richiesta */
                     
-                    while(q.aim_cell != taxi.where_taxi){
+                    while(q.aim_cell != taxi.where_taxi && t){
                         
                         sops[0].sem_num = SEM_MASTER;
                         sops[0].sem_op = -1;
                         sops[0].sem_flg = 0;
                         if(semtimedop(semid, sops, 1, &tsop) == -1){
-                            if(errno == EAGAIN){ 
+                            if(errno == EAGAIN){
+                                printf(CRED"USCITA 1 SEMTIMEDOP TAXI %ld\n"CDEFAULT,(long)getpid());
+                                sops[0].sem_num = SEM_TAXI;
+                                sops[0].sem_op = 1;
+                                sops[0].sem_flg = 0;
+                                if(semop(semid, sops, 1) == -1){
+                                    ERROR_EXIT
+                                }
+                                printf("USCITA 2 SEMTIMEDOP TAXI %ld\n",(long)getpid());
                                 exit(EXIT_FAILURE);
                             }else{
                                 ERROR_EXIT
                             }
                         }
-
+                        
                         go_cell(city_map, &taxi, q.aim_cell);
 
-                        printf("taxi %ld sono dentro\n", (long)getpid());
+                        printf("taxi %ld sono dentro, cella %d arrivo %ld\n", (long)getpid(), taxi.where_taxi, q.aim_cell);
+                        treq.tv_sec = 0;
                         treq.tv_nsec = city_map->m_cell[taxi.where_taxi].cross_time;
                         nanosleep(&treq, &trem);
 
@@ -368,32 +375,33 @@ int main(int argc, char** argv){
                         sops[0].sem_flg = 0;
 
                         if(semop(semid, sops, 1) == -1){
-                            if(errno == EINTR){
-                                exit(EXIT_FAILURE);
-                            }else{
-                                ERROR_EXIT
-                            }
+                            ERROR_EXIT
                         }
                         
                         
                     }
                     stat->success_req += 1;
-                    city_map->m_cell[taxi.where_taxi].n_taxi_here -= 1;
+                    /*city_map->m_cell[taxi.where_taxi].n_taxi_here -= 1;*/
                     printf("taxi %ld arrivato a destinazione a cella %d\n",(long)getpid(), taxi.where_taxi);
 
-                    sops[1].sem_num = SEM_TAXI;
-                    sops[1].sem_op = 1;
-                    sops[1].sem_flg = 0;
+                    sops[0].sem_num = SEM_TAXI;
+                    sops[0].sem_op = 1;
+                    sops[0].sem_flg = 0;
 
                     if(semop(semid, sops, 1) == -1){
-                        if(errno == EINTR){
-                            exit(EXIT_FAILURE);
-                        }else{
-                            ERROR_EXIT
-                        }
+                        ERROR_EXIT
                     }
+                    printf("fine while t\n");
                 }
-
+                if(shmdt(city_map) == -1){
+                    ERROR_EXIT
+                }
+                if(shmdt(param) == -1){
+                    ERROR_EXIT
+                }
+                if(shmdt(stat) == -1){
+                    ERROR_EXIT
+                }
                 exit(EXIT_SUCCESS);
         }
     }
