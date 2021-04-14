@@ -139,7 +139,7 @@ int main(int argc, char** argv){
                 ERROR_EXIT
             case 0: /* ----- codice figlio -----  */
                 
-                /* processo SOURCE si associa ad una cella libera che non sia HOLE e registra source */
+                /* processo SOURCE si associa ad una cella libera che non sia HOLE */
                 source_pos = place_source(city_map);
                 sigaction(SIGINT, &sa, NULL);
                 
@@ -210,7 +210,7 @@ int main(int argc, char** argv){
                     
                     stat->n_request +=1;      
 
-                    printf("Source %ld richiesta partenza %d di arrivo a %ld registrata\n", (long)getpid(), source_pos, q.aim_cell);
+                    /*printf("Source %ld richiesta partenza %d di arrivo a %ld registrata\n", (long)getpid(), source_pos, q.aim_cell);*/
                     /* ----- FINE SEZIONE CRITITCA ----- */
                     
                     sops[0].sem_num = SEM_MASTER;
@@ -267,14 +267,10 @@ int main(int argc, char** argv){
                     sops[0].sem_op = -1;
                     sops[0].sem_flg = 0;
                     if(semop(semid, sops, 1) == -1){
-                        if(errno == EINTR){
-                            exit(EXIT_FAILURE);
-                        }else{
-                            ERROR_EXIT
-                        }
+                        ERROR_EXIT
                     }
                     
-                    printf("taxi %ld suorcecell = %d\n", (long)getpid(), city_map->m_cell[taxi.where_taxi].is_source);
+                    /*printf("taxi %ld suorcecell = %d\n", (long)getpid(), city_map->m_cell[taxi.where_taxi].is_source);*/
                     /*printf("taxi %ld !suorcecell = %d\n", (long)getpid(),!city_map->m_cell[taxi.where_taxi].is_source);*/
                     
                  /*   if(!city_map->m_cell[taxi.where_taxi].is_source){
@@ -338,7 +334,7 @@ int main(int argc, char** argv){
                     }
                     
 
-                    printf("taxi %ld curp %d arrivo %ld\n",(long)getpid(), taxi.where_taxi, q.aim_cell);
+                    printf("taxi %ld richiesta trovata. Partenza %d arrivo %ld\n",(long)getpid(), taxi.where_taxi, q.aim_cell);
                     
                     /* esegue la richiesta */
                     
@@ -349,6 +345,7 @@ int main(int argc, char** argv){
                         sops[0].sem_flg = 0;
                         if(semtimedop(semid, sops, 1, &tsop) == -1){
                             if(errno == EAGAIN){ 
+                                
                                 exit(EXIT_FAILURE);
                             }else{
                                 ERROR_EXIT

@@ -172,7 +172,7 @@ print_map(city_map);
 
     alarm(param->so_duration);
 
-    trstat.tv_sec = 3;
+    trstat.tv_sec = 5;
     trstat.tv_nsec = 0;
     trestat.tv_sec = 0;
     trestat.tv_sec = 0;
