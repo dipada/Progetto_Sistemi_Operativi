@@ -214,7 +214,7 @@ int skip_sx_hole(map *city_map, taxi_t *taxi){
 /* sposta il taxi nella cella alla sua destra se non è hole e c'è spazio1, ritorna la nuova posizione altrimenti la stessa */
 int mv_dx(map* city_map, taxi_t *taxi, int curr_pos){
     int new_pos = curr_pos + 1;
-    printf("taxi %ld vuole andare a dx\n",(long)getpid());
+    /*printf("taxi %ld vuole andare a dx\n",(long)getpid());*/
     if((curr_pos%SO_WIDTH) != SO_WIDTH -1 && city_map->m_cell[new_pos].n_taxi_here < city_map->m_cell[new_pos].capacity && !city_map->m_cell[new_pos].is_hole){
         /* non è una cella estrema destra. Nella cella destra c'è spazio per il taxi e non è hole */
         city_map->m_cell[curr_pos].n_taxi_here -= 1;
@@ -223,7 +223,7 @@ int mv_dx(map* city_map, taxi_t *taxi, int curr_pos){
         taxi->pid_cell_taxi = city_map->m_cell[new_pos].pid_source;
         taxi->where_taxi = new_pos;
     
-    printf("Il taxi %ld è andato a dx da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);
+    /*printf("Il taxi %ld è andato a dx da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);*/
 
     return new_pos;
     }
@@ -233,7 +233,7 @@ int mv_dx(map* city_map, taxi_t *taxi, int curr_pos){
 /* sposta il taxi nella cella alla sua sinistra, ritorna la nuova posizione altrimenti la stessa */
 int mv_sx(map* city_map, taxi_t *taxi, int curr_pos){
     int new_pos = curr_pos - 1;
-    printf("taxi %ld vuole andare a sx\n",(long)getpid());
+    /*printf("taxi %ld vuole andare a sx\n",(long)getpid());*/
     if((curr_pos%SO_WIDTH) != 0 && city_map->m_cell[new_pos].n_taxi_here < city_map->m_cell[new_pos].capacity && !city_map->m_cell[new_pos].is_hole){
         /* non è una cella estrema sinistra. Nella cella sinistra c'è spazio per il taxi e non è hole */
         city_map->m_cell[curr_pos].n_taxi_here -= 1;
@@ -242,7 +242,7 @@ int mv_sx(map* city_map, taxi_t *taxi, int curr_pos){
         taxi->pid_cell_taxi = city_map->m_cell[new_pos].pid_source;
         taxi->where_taxi = new_pos;
     
-    printf("Il taxi %ld è andato a sx da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);
+    /*printf("Il taxi %ld è andato a sx da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);*/
     return new_pos;
     }
     return curr_pos;    
@@ -251,7 +251,7 @@ int mv_sx(map* city_map, taxi_t *taxi, int curr_pos){
 /* sposta il taxi nella cella sotto, ritorna la nuova posizione altrimenti la stessa */
 int mv_dw(map* city_map, taxi_t *taxi, int curr_pos){
     int new_pos = curr_pos + SO_WIDTH;
-    printf("taxi %ld vuole andare a dw\n",(long)getpid());
+    /*printf("taxi %ld vuole andare a dw\n",(long)getpid());*/
     if(curr_pos < (SO_WIDTH*SO_HEIGHT)-SO_WIDTH && city_map->m_cell[new_pos].n_taxi_here < city_map->m_cell[new_pos].capacity && !city_map->m_cell[new_pos].is_hole){
         /* non è una cella estrema inferiore.Nella cella inferiore c'è spazio per il taxi e non è hole */
         city_map->m_cell[curr_pos].n_taxi_here -= 1;
@@ -260,7 +260,7 @@ int mv_dw(map* city_map, taxi_t *taxi, int curr_pos){
         taxi->pid_cell_taxi = city_map->m_cell[new_pos].pid_source;
         taxi->where_taxi = new_pos;
     
-    printf("Il taxi %ld è andato giu da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);
+    /*printf("Il taxi %ld è andato giu da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);*/
     return new_pos;
     }
     return curr_pos;    
@@ -269,7 +269,7 @@ int mv_dw(map* city_map, taxi_t *taxi, int curr_pos){
 /* sposta il taxi nella cella sopra, ritorna la nuova posizione altrimenti la stessa */
 int mv_up(map* city_map, taxi_t *taxi, int curr_pos){
     int new_pos = curr_pos - SO_WIDTH;
-    printf("taxi %ld vuole andare a up\n",(long)getpid());
+    /*printf("taxi %ld vuole andare a up\n",(long)getpid());*/
     if(curr_pos > SO_WIDTH - 1 && city_map->m_cell[new_pos].n_taxi_here < city_map->m_cell[new_pos].capacity && !city_map->m_cell[new_pos].is_hole){
         /* non è una cella estrema destra. Nella cella superiore c'è spazio per il taxi e non è hole */
         city_map->m_cell[curr_pos].n_taxi_here -= 1;
@@ -279,7 +279,7 @@ int mv_up(map* city_map, taxi_t *taxi, int curr_pos){
         taxi->where_taxi = new_pos;
     
 
-    printf("Il taxi %ld è andato a su da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);
+    /*printf("Il taxi %ld è andato a su da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);*/
     return new_pos;
     }
     return curr_pos;

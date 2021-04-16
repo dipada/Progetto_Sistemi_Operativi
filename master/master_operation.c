@@ -52,7 +52,7 @@ void print_status_cells(map *city_map){
     
     /* stampo le righe della mappa suddividendole per celle */
     for(i = 0; i < SO_WIDTH*SO_HEIGHT; i++){
-        printf("%3d%%", (city_map->m_cell[i].n_taxi_here/city_map->m_cell[i].capacity)*100);
+        printf(" %3d%%", (city_map->m_cell[i].n_taxi_here/city_map->m_cell[i].capacity)*100);
         if((i+1)%SO_WIDTH == 0){ /* se è l'ultima colonna della riga stampa "|" e stampa una riga di separazione */
             printf("|\n");
             printf("*-");

@@ -155,11 +155,11 @@ print_map(city_map);
     sops[0].sem_flg = 0;
 
     sops[1].sem_num = SEM_SOURCE;
-    sops[1].sem_op = 1;
+    sops[1].sem_op = param->so_source;
     sops[1].sem_flg = 0;
 
     sops[2].sem_num = SEM_TAXI;
-    sops[2].sem_op = 1;
+    sops[2].sem_op = param->so_taxi;
     sops[2].sem_flg = 0;
 
     sops[3].sem_num = SEM_MASTER;
@@ -185,7 +185,7 @@ print_map(city_map);
             ERROR_EXIT
         }
         /* ogni secondo stampa lo stato di occupazione delle celle */
-        /*print_status_cells(city_map);*/
+        print_status_cells(city_map);
          time ( &rawtime );
   timeinfo = localtime ( &rawtime );
          printf ( "Current local time and date: %s", asctime (timeinfo) );
