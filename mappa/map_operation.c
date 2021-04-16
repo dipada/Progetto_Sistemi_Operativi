@@ -2,7 +2,7 @@
 #include "../master/master.h"
 
 /* handler gestione ALARM per creazione mappa */
-void map_signal_handler(int sig){
+void map_handler(int sig){
     if(sig == SIGALRM){
         fprintf(stderr, "[map_handler]: timer for generate map expired.\n");
         exit(EXIT_FAILURE);
@@ -113,7 +113,7 @@ void load_configuration(struct parameters* param, char * filename){
 }
 
 /* inizializza tutte le celle della mappa */
-void fill_map(map *city_map, const struct parameters *param){
+void init_map(map *city_map, const struct parameters *param){
     register int i;
     for(i = 0; i < SO_WIDTH*SO_HEIGHT; i++){
         city_map->m_cell[i].is_hole = 0;

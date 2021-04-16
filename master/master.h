@@ -18,6 +18,7 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/sem.h>
+#include <sys/msg.h>
 
 #define ERROR_EXIT     if(errno){fprintf(stderr,                            \
                         "[%s]-Line:%d-PID[%ld] >> Errore %d (%s)\n",        \
@@ -39,11 +40,32 @@
 #define SHMKEY_PAR 19876980
 #define SHMKEY_STAT 38435758
 #define SEMKEY 65465445
+#define MSGKEY 45829168
 
 union semun{
     int val; 
     unsigned short* array;
 };
+
+struct statistic{
+    int n_request;              /* numero di richieste effettuate */
+    int success_req;            /* viaggi eseguiti con successo */
+    int outstanding_req;        /* viaggi inevasi */
+    int aborted_req;            /* viaggi abortiti */
+    long pid_hcells_taxi;       /* pid del taxi che ha percorso più celle */
+    int high_ncells_crossed;    /* numero celle attraversate dal taxi che ah percorso più celle taxi */
+    long pid_htime_taxi;        /* pid del taxi che ha impiegato più tempo di tutti */
+    long high_time;             /* tempo impiegato dal taxi peggiore */
+    long pid_hreq_taxi;         /* pid taxi che ha raccolto più richieste */
+    int n_high_req;             /* numero di richieste raccolte dal taxi con più celle */
+};
+
+/* struttura per la coda di messaggi */
+struct request_queue{
+    long start_cell; /* cella di partenza utilizzato come mtype */
+    long aim_cell;   /* cella di arrivo */
+};
+
 
 enum semaphores{SEM_MASTER, SEM_SOURCE, SEM_TAXI};
 
@@ -51,9 +73,13 @@ enum semaphores{SEM_MASTER, SEM_SOURCE, SEM_TAXI};
 /* stampa la mappa evidenzianziando hole, sources e top_cells */
 void print_map(map *city_map);
 
+/* inizializza la struttura delle statistiche */
+void init_stat(struct statistic *stat);
+
 /* stampa lo stato di occupazione delle varie celle */
 void print_status_cells(map *city_map);
 
 /* controlla lo status di un processo */
 int check_status(int status);
+
 #endif

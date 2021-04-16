@@ -17,14 +17,14 @@ int main(int argc, char **argv){
     sigset_t my_mask;
     int shm_map, shm_par;
     
-    sa.sa_handler = &map_signal_handler;
+    sa.sa_handler = &map_handler;
     sa.sa_flags = 0;
     sigfillset(&my_mask);
     sa.sa_mask = my_mask;
     
     sigaction(SIGALRM, &sa, NULL);
     
-    /* identifica e fa attach SHM */
+    /* ID SHM */
     if((shm_map = shmget(SHMKEY_MAP, sizeof(map), 0)) == -1){
         ERROR_EXIT
     }
@@ -43,11 +43,11 @@ int main(int argc, char **argv){
     load_configuration(param, CONF_FILE);
     
     /* inizializzo tutte le celle della mappa*/
-    fill_map(city_map, param);
+    init_map(city_map, param);
     
     place_hole(city_map, param->so_holes, SO_WIDTH*SO_HEIGHT);
     
-    /* detach SHM */
+    /* detach della SHM */
     if(shmdt(city_map) == -1){
         ERROR_EXIT
     }

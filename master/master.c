@@ -37,7 +37,7 @@ void master_handler(int sig){
 
 int main(int argc, char **argv){
 
-    int status, shm_map, shm_par, shm_stat, semid;
+    int status, shm_map, shm_par, shm_stat, semid, qid, i;
     pid_t pid;
     map *city_map;
     struct parameters *param;
@@ -80,6 +80,26 @@ time_t rawtime;
         ERROR_EXIT
     }
     
+    /* ----- caricamento parametri, generazione mappa e posizionamento holes ----- */
+    switch (pid = fork()){
+        case -1:
+            ERROR_EXIT
+
+        case 0: /* ----- codice figlio ----- */
+            /* crea, inizializza la mappa e posiziona HOLES */
+            if(execl("mappa/map", "map", (char *) NULL)){
+                ERROR_EXIT
+            }
+        
+        default: /* ----- codice del padre ----- */
+            /* attende la terminazione e analizza lo status di uscita */
+            wait(&status);
+            if(check_status(status)){
+                fprintf(stderr,"[%s]: Exiting due to error map...\n", __FILE__);
+                exit(EXIT_FAILURE);
+            }       
+    }
+
     /* attach della shm */
     if((city_map = (map *) shmat(shm_map, NULL, 0)) == (void *) -1){
         ERROR_EXIT
@@ -106,46 +126,31 @@ time_t rawtime;
     }
     free(arg.array);    
 
-    /* ----- caricamento parametri, generazione mappa e posizionamento holes ----- */
-    switch (pid = fork()){
-        case -1:
-            ERROR_EXIT
-
-        case 0: /* ----- codice figlio ----- */
-            /* crea, inizializza la mappa e posiziona HOLES */
-            if(execl("mappa/map", "map", (char *) NULL)){
-                ERROR_EXIT
-            }
-        
-        default: /* ----- codice del padre ----- */
-            /* attende la terminazione e analizza lo status di uscita */
-            wait(&status);
-            if(check_status(status)){
-                fprintf(stderr,"[%s]: Exiting due to error map...\n", __FILE__);
-                exit(EXIT_FAILURE);
-            }       
+    /* crea la coda di messaggi per le richieste dei taxi */
+    if((qid = msgget(MSGKEY, IPC_CREAT | 0666)) == -1){
+        ERROR_EXIT
     }
+
+    init_stat(stat);   
     
-    switch (pid = fork()){
-        case -1:
-            ERROR_EXIT
-
-        case 0: /* ----- codice figlio ----- */
-            /* posiziona SO_SOURCE e genera SO_TAXI  */
-            if(execl("taxi/taxi", "taxi", (char *) NULL)){
+    /* creazione dei processi source */
+    for(i = 0; i < param->so_source; i++){
+        switch (pid = fork()){
+            case -1:
                 ERROR_EXIT
-            }
 
-        /* ----- codice del padre ----- */
-            /* attende la terminazione e analizza lo status di uscita */
-            wait(&status);
-            if(check_status(status)){
-                fprintf(stderr,"[%s]: Exiting due to error taxi...\n", __FILE__);
-                exit(EXIT_FAILURE);
-            }      
+            case 0: /* ----- codice figlio ----- */
+                /* posiziona SO_SOURCE e genera SO_TAXI  */
+                if(execl("source/source", "source", (char *) NULL)){
+                    ERROR_EXIT
+                }                  
+        }
     }
+    printf(CRED"oko"CDEFAULT"\n");
+    
+
     /*waitpid(0,NULL,0);*/
-print_map(city_map);
+/*print_map(city_map);*
 
     /* la simulazione parte dopo che sia taxi sia source sono stati creati e inizializzati */
     /* aspetta che il semaforo master diventi 0, lo incrementa per far partire la simulazione e incrementa il semaforo TAXI */
@@ -155,11 +160,11 @@ print_map(city_map);
     sops[0].sem_flg = 0;
 
     sops[1].sem_num = SEM_SOURCE;
-    sops[1].sem_op = param->so_source;
+    sops[1].sem_op = 1;
     sops[1].sem_flg = 0;
 
     sops[2].sem_num = SEM_TAXI;
-    sops[2].sem_op = param->so_taxi;
+    sops[2].sem_op = 1;
     sops[2].sem_flg = 0;
 
     sops[3].sem_num = SEM_MASTER;
@@ -169,7 +174,7 @@ print_map(city_map);
     if(semop(semid, sops, 4) == -1){
         ERROR_EXIT
     }
-
+/*
     alarm(param->so_duration);
 
     trstat.tv_sec = 5;
@@ -183,9 +188,9 @@ print_map(city_map);
         sops[0].sem_flg = 0;
         if(semop(semid, sops, 1) == -1){
             ERROR_EXIT
-        }
+        }*/
         /* ogni secondo stampa lo stato di occupazione delle celle */
-        print_status_cells(city_map);
+       /* print_status_cells(city_map);
          time ( &rawtime );
   timeinfo = localtime ( &rawtime );
          printf ( "Current local time and date: %s", asctime (timeinfo) );
@@ -199,7 +204,7 @@ print_map(city_map);
         nanosleep(&trstat, &trestat);
     }
     
-    printf("TEMPO FINITO\n");
+    printf("TEMPO FINITO\n");*/
 
     
     
@@ -207,7 +212,10 @@ print_map(city_map);
     /*printf("Richieste totali generate: %d\n", stat->n_request);*/
 
     /* stampa la mappa evidenziando HOLE, SOURCE e TOP_CELLS*/
-    wait(&status);
+    for(i = 0; i < param->so_source; i++){
+        wait(&status);
+        printf("source terminata\n");
+    }
     print_map(city_map);
 
     /*for(;;){
@@ -218,7 +226,12 @@ print_map(city_map);
     
     /*print_status_cells(city_map);*/
     
-    /* TODO rimozione semafori */
+    
+
+    /* rimuove la coda di messaggi */
+    if(msgctl(qid, IPC_RMID, NULL)){
+        ERROR_EXIT
+    }
 
     /* detach e rimozione SHM */
     if(shmdt(city_map) == -1){

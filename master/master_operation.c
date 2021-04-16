@@ -1,5 +1,19 @@
 #include "master.h"
 
+/* inizializza la struttura delle statistiche */
+void init_stat(struct statistic *stat){
+    stat->n_request = 0;
+    stat->success_req = 0;
+    stat->outstanding_req = 0;
+    stat->aborted_req = 0;
+    stat->pid_hcells_taxi = -1;
+    stat->high_ncells_crossed = 0;
+    stat->pid_htime_taxi = -1;
+    stat->high_time = 0;
+    stat->pid_hreq_taxi = -1;
+    stat->n_high_req = 0;
+}
+
 /* stampa la mappa evidenzianziando hole, sources e top_cells */
 void print_map(map *city_map){
     int register i,j; 

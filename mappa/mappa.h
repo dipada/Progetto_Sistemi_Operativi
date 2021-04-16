@@ -12,8 +12,8 @@
 #define BUFSIZE 128
 
 /* parametri definiti a tempo di compilazione */
-#define SO_WIDTH 2
-#define SO_HEIGHT 2
+#define SO_WIDTH 20
+#define SO_HEIGHT 10
 
 /* path file di configurazione*/
 #define CONF_FILE ("file_configurazione/conf.txt")
@@ -40,7 +40,7 @@ typedef struct{
     int is_source;          /* la cella è un source 1 vero, 0 falso */
     long pid_source;        /* sarà > 0 se associato un processo altrimenti -1 */
     int n_taxi_here;        /* numero di taxi presenti in questa cella */
-    long transitions;   /* numero di volte che la cella è stata attraversata */
+    long transitions;       /* numero di volte che la cella è stata attraversata */
 }map_cell;
 
 /* struttura della mappa */
@@ -49,22 +49,19 @@ typedef struct{
 }map;
 
 /* handler gestione segnali mappa */
-void map_signal_handler(int sig);
+void map_handler(int sig);
 
 /* carica la configurazione dal file passato col pathname */
 void load_configuration(struct parameters* param, char * filename);
 
-/* Inizializza la mappa, posiziona le SO_HOLES */
-void initialize_map(map *city_map, const struct parameters *param);
-
-/* riempie tutte le celle della mappa */
-void fill_map(map *city_map, const struct parameters *param);
+/* inizializzo tutte le celle della mappa*/
+void init_map(map *city_map, const struct parameters *param);
 
 /* posiziona le n celle sohole nella mappa */
 void place_hole(map *city_map, int n_hole, const int n_cells);
 
-/* posiziona le source nelle celle restanti senza sovrapposizioni 
-void place_source(map *city_map, int n_source, int n_cells);*/
+/* posiziona la cella source */
+int place_source(map *city_map);
 
 /* genera un numero random in un range [a,b] con a < b */
 int get_random(int a, int b);

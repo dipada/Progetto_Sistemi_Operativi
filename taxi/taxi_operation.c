@@ -1,21 +1,10 @@
 #include "taxi.h"
 
 
-/* inizializza la struttura delle statistiche */
-void initialize_stat(struct statistic *stat){
-    stat->n_request = 0;
-    stat->success_req = 0;
-    stat->outstanding_req = 0;
-    stat->aborted_req = 0;
-    stat->pid_hcells_taxi = -1;
-    stat->high_ncells_crossed = 0;
-    stat->pid_htime_taxi = -1;
-    stat->high_time = 0;
-    stat->pid_hreq_taxi = -1;
-    stat->n_high_req = 0;
-}
+
 
 /* posiziona celle SO_SOURCE e associa il pid del processo, registra nel vettore source la posizione della source */
+/* da rimuovere */
 int place_source(map *city_map){
     int rand_position, i = 1;
     while(i > 0){
@@ -34,7 +23,7 @@ int place_source(map *city_map){
     }
     return rand_position;
 }
-
+ 
 
 /* posiziona il TAXI casualmente sulla mappa */
 void place_taxi(map *city_map, taxi_t *taxi){

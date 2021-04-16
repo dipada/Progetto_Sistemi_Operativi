@@ -145,14 +145,11 @@ int main(int argc, char** argv){
     if((arg.array = (unsigned short *)malloc(sizeof(unsigned short)*3)) == NULL ){
         ERROR_EXIT
     }*/
-    /* crea la coda di messaggi per le richieste dei taxi */
-    if((qid = msgget(IPC_PRIVATE, IPC_CREAT | 0666)) == -1){
-        ERROR_EXIT
-    }
+    
 
     
     /* inizializza struttura statistiche */
-    initialize_stat(stat);    
+     
     
     /* crea SO_SOURCE processi dedicati che si legano ad una cella della mappa  */
     for(i = 0; i < param->so_source; i++){
@@ -519,10 +516,7 @@ int main(int argc, char** argv){
     
     printf("n request %d, SUCCESS REQUEST = %d ABORTED = %d\n",stat->n_request, stat->success_req, stat->aborted_req);
 
-    /* rimuove la coda di messaggi */
-    if(msgctl(qid, IPC_RMID, NULL)){
-        ERROR_EXIT
-    }
+    
 
     /* detach SHM */
     if(shmdt(city_map) == -1){
