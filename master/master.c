@@ -45,8 +45,8 @@ int main(int argc, char **argv){
 
     struct timespec trstat, trestat;
 
-time_t rawtime;
-  struct tm * timeinfo;
+    /*time_t rawtime;
+  struct tm * timeinfo;*/
 
 
     union semun arg;
@@ -120,11 +120,12 @@ time_t rawtime;
         ERROR_EXIT
     }
     arg.array[SEM_MASTER] = 1;
+    arg.array[SEM_SOURCE] = 0;
     arg.array[SEM_TAXI] = 0;
     if(semctl(semid, 0, SETALL, arg.array) == -1){
         ERROR_EXIT
     }
-    free(arg.array);    
+    free(arg.array);
 
     /* crea la coda di messaggi per le richieste dei taxi */
     if((qid = msgget(MSGKEY, IPC_CREAT | 0666)) == -1){
@@ -146,17 +147,19 @@ time_t rawtime;
                 }                  
         }
     }
+
     printf(CRED"oko"CDEFAULT"\n");
+    
     
 
     /*waitpid(0,NULL,0);*/
-/*print_map(city_map);*
+/*print_map(city_map);*/
 
     /* la simulazione parte dopo che sia taxi sia source sono stati creati e inizializzati */
     /* aspetta che il semaforo master diventi 0, lo incrementa per far partire la simulazione e incrementa il semaforo TAXI */
     
     sops[0].sem_num = SEM_MASTER;
-    sops[0].sem_op = 0;
+    sops[0].sem_op = 1;
     sops[0].sem_flg = 0;
 
     sops[1].sem_num = SEM_SOURCE;
@@ -167,11 +170,7 @@ time_t rawtime;
     sops[2].sem_op = 1;
     sops[2].sem_flg = 0;
 
-    sops[3].sem_num = SEM_MASTER;
-    sops[3].sem_op = 1;
-    sops[3].sem_flg = 0;
-
-    if(semop(semid, sops, 4) == -1){
+    if(semop(semid, sops, 3) == -1){
         ERROR_EXIT
     }
 /*

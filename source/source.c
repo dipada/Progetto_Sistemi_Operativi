@@ -1,7 +1,7 @@
 /* Il processo SOURCE si associa ad una cella della mappa che non sia HOLE o SOURCE */
 #include "../mappa/mappa.h"
 #include "../master/master.h"
-
+#include <time.h>
 
 
 
@@ -13,6 +13,12 @@ int main(int argc, char** argv){
     struct parameters* param;
 
     struct sembuf sops[2];
+
+    struct timespec treq, trem;
+    treq.tv_sec = 0;
+    treq.tv_nsec = 0;
+    trem.tv_sec = 0;
+    trem.tv_nsec = 0;
 
     /* recupero dell'ID e attach SHM */
     if((shm_map = shmget(SHMKEY_MAP, sizeof(map), 0)) == -1){
@@ -35,7 +41,7 @@ int main(int argc, char** argv){
     }
     
     /* ID semafori */
-    if(semid = semget(SEMKEY, 3, 0) == -1){
+    if((semid = semget(SEMKEY, 3, 0)) == -1){
         ERROR_EXIT
     }
 
@@ -58,7 +64,12 @@ int main(int argc, char** argv){
         ERROR_EXIT
     }
 
-    printf("TAXI %ld, master ha concesso\n");
+    printf("TAXI %ld, master ha concesso\n", (long)getpid());
+    
+    treq.tv_nsec = get_random(1, 999999999);
+    if(nanosleep(&treq, &trem) == -1){
+        ERROR_EXIT
+    }
 
     sops[0].sem_num = SEM_SOURCE;
     sops[0].sem_op = 1;

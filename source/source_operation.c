@@ -1,4 +1,5 @@
 #include "../mappa/mappa.h"
+#include "../master/master.h"
 
 /* posiziona la cella SO_SOURCE  */
 int place_source(map *city_map){

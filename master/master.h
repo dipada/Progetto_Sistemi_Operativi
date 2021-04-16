@@ -19,6 +19,7 @@
 #include <sys/shm.h>
 #include <sys/sem.h>
 #include <sys/msg.h>
+#include <time.h>
 
 #define ERROR_EXIT     if(errno){fprintf(stderr,                            \
                         "[%s]-Line:%d-PID[%ld] >> Errore %d (%s)\n",        \
