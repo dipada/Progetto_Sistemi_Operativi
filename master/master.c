@@ -126,8 +126,8 @@ int main(int argc, char **argv){
     if((arg.array = (unsigned short *)malloc(sizeof(unsigned short)*3)) == NULL ){
         ERROR_EXIT
     }
-    arg.array[SEM_MASTER] = param->so_source;
-    arg.array[SEM_SOURCE] = 1;
+    arg.array[SEM_MASTER] = 1;
+    arg.array[SEM_SOURCE] = param->so_source;
     arg.array[SEM_TAXI] = 0;
     if(semctl(semid, 0, SETALL, arg.array) == -1){
         ERROR_EXIT
@@ -160,21 +160,17 @@ int main(int argc, char **argv){
     /* la simulazione parte dopo che sia taxi sia source sono stati creati e inizializzati */
     /* aspetta che il semaforo master diventi 0, lo incrementa per far partire la simulazione e incrementa il semaforo TAXI */
     
-    sops[0].sem_num = SEM_MASTER;
-    sops[0].sem_op = 0;
+    sops[0].sem_num = SEM_SOURCE;
+    sops[0].sem_op = 0;                 /* tutti i processi source si sono posizionati */
     sops[0].sem_flg = 0;
-
-    sops[1].sem_num = SEM_SOURCE;
+    
+    sops[1].sem_num = SEM_TAXI;
     sops[1].sem_op = 1;
     sops[1].sem_flg = 0;
-    
-    sops[2].sem_num = SEM_TAXI;
+
+    sops[2].sem_num = SEM_SOURCE;
     sops[2].sem_op = 1;
     sops[2].sem_flg = 0;
-
-    sops[3].sem_num = SEM_MASTER;
-    sops[3].sem_op = 1;
-    sops[3].sem_flg = 0;
 
     if(semop(semid, sops, 3) == -1){
         ERROR_EXIT

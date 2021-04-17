@@ -63,8 +63,7 @@ int main(int argc, char** argv){
 
     sigaction(SIGTERM, &sa, NULL);
 
-    printf("source %ld semsource = %d\n",(long)getpid(), semctl(semid, SEM_SOURCE, GETVAL));
-    sops[0].sem_num = SEM_SOURCE;
+    sops[0].sem_num = SEM_MASTER;
     sops[0].sem_op = -1;
     sops[0].sem_flg = 0;
     if(semop(semid, sops, 1) == -1){
@@ -73,19 +72,15 @@ int main(int argc, char** argv){
     /* posizionamento source */
     source_pos = place_source(city_map);
 
-    sops[0].sem_num = SEM_SOURCE;
+    sops[0].sem_num = SEM_MASTER;
     sops[0].sem_op = 1;
     sops[0].sem_flg = 0;
     if(semop(semid, sops, 1) == -1){
         ERROR_EXIT
     }
-    /*sops[0].sem_num = SEM_MASTER;
-    sops[0].sem_op = -1;
-    sops[0].sem_flg = 0;
-    if(semop(semid, sops, 1) == -1){
-        ERROR_EXIT
-    }*/
-
+    
+    sigaction(SIGINT, &sa, NULL);
+    
     while(t){
         /* in attesa del master che autorizza l'avvio della simulazione */
         sops[0].sem_num = SEM_SOURCE;
@@ -96,12 +91,12 @@ int main(int argc, char** argv){
         }
         
 
-        sigaction(SIGINT, &sa, NULL);
+        
 
     
         /* genera richieste taxi con un intervallo variabile tra 1 nsec - 1 sec */
         treq.tv_sec = 0;
-        treq.tv_nsec = get_random(1, 2);
+        treq.tv_nsec = get_random(999999999, 999999999);
         sigprocmask(SIG_BLOCK, &my_mask, NULL);
         if(nanosleep(&treq, &trem) == -1){        
             ERROR_EXIT
@@ -122,7 +117,7 @@ int main(int argc, char** argv){
             }
             /* registra l'avvenuta richiesta */
             stat->n_request += 1;
-            /*printf("Source %ld richiesta registrata\n", (long)getpid());*/
+            printf("Source %ld richiesta registrata\n", (long)getpid());
 
             sops[0].sem_num = SEM_MASTER;
             sops[0].sem_op = 1;
