@@ -64,7 +64,7 @@ struct statistic{
 /* struttura per la coda di messaggi */
 struct request_queue{
     long start_cell; /* cella di partenza utilizzato come mtype */
-    long aim_cell;   /* cella di arrivo */
+    int dest_cell;   /* cella di arrivo */
 };
 
 

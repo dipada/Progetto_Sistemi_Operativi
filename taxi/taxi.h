@@ -19,10 +19,6 @@ typedef struct{
 /* posiziona il TAXI casualmente sulla mappa */
 void place_taxi(map *city_map, taxi_t *taxi);
 
-/* genera una cella casuale che non sia hole e sia diversa dalla cella passata come argomento */
-int get_aim_cell(map *city_map, int curr_source_pos);
-
-
 /* ----- MOVIMENTO TAXI ----- */
 
 void go_cell(map* city_map, taxi_t *taxi, int goal_pos);
@@ -55,13 +51,6 @@ int skip_sx_hole(map *city_map, taxi_t *taxi);
 
 /* genera un numero random in un range [a,b] con a < b */
 int get_random(int a, int b);
-
-
-
-
-
-
-
 
 /* inizializza il semaforo a 1 */
 int initSemAvailable(int semId, int semNum);

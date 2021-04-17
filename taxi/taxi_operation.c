@@ -49,20 +49,7 @@ void place_taxi(map *city_map, taxi_t *taxi){
     }
 }
 
-/* genera una cella casuale che non sia hole e sia diversa dalla cella passata come argomento */
-int get_aim_cell(map *city_map, int curr_source_pos){
-    int rand_position;
-    
-    do{
-    if((rand_position = get_random(0, (SO_WIDTH*SO_HEIGHT - 1))) == -1){
-            fprintf(stderr, "Error: fail to generate random value for aim_request\n");
-            exit(EXIT_FAILURE);
-        }
-    }while(city_map->m_cell[rand_position].is_hole || rand_position == curr_source_pos);
-    
-    /* la cella non è un hole e non è la cella corrente */
-    return rand_position;    
-}
+
 
 
 /* in base alla posizione del taxi cerca una cella source e ritorna la posizione */

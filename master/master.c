@@ -45,8 +45,8 @@ int main(int argc, char **argv){
 
     struct timespec trstat, trestat;
 
-    /*time_t rawtime;
-  struct tm * timeinfo;*/
+    time_t rawtime;
+  struct tm * timeinfo;
 
 
     union semun arg;
@@ -79,7 +79,29 @@ int main(int argc, char **argv){
     if((shm_stat = shmget(SHMKEY_STAT, sizeof(struct statistic), IPC_CREAT | 0666)) == -1){
         ERROR_EXIT
     }
+
+    /* attach della shm */
+    if((city_map = (map *) shmat(shm_map, NULL, 0)) == (void *) -1){
+        ERROR_EXIT
+    }
+    if((param = (struct parameters *) shmat(shm_par, NULL, SHM_RDONLY)) == (void *) -1){
+        ERROR_EXIT
+    }
+    if((stat = (struct statistic *) shmat(shm_stat, NULL, 0)) == (void *) -1){
+        ERROR_EXIT
+    }
     
+    /* Creazione dei semafori */
+    if((semid = semget(SEMKEY, 3, IPC_CREAT | 0666)) == -1){
+        ERROR_EXIT
+    }
+    
+
+    /* crea la coda di messaggi per le richieste dei taxi */
+    if((qid = msgget(MSGKEY, IPC_CREAT | 0666)) == -1){
+        ERROR_EXIT
+    }
+
     /* ----- caricamento parametri, generazione mappa e posizionamento holes ----- */
     switch (pid = fork()){
         case -1:
@@ -100,37 +122,17 @@ int main(int argc, char **argv){
             }       
     }
 
-    /* attach della shm */
-    if((city_map = (map *) shmat(shm_map, NULL, 0)) == (void *) -1){
-        ERROR_EXIT
-    }
-    if((param = (struct parameters *) shmat(shm_par, NULL, SHM_RDONLY)) == (void *) -1){
-        ERROR_EXIT
-    }
-    if((stat = (struct statistic *) shmat(shm_stat, NULL, 0)) == (void *) -1){
-        ERROR_EXIT
-    }
-    
-    /* allocazione dei semafori */
-    if((semid = semget(SEMKEY, 3, IPC_CREAT | 0666)) == -1){
-        ERROR_EXIT
-    }
     /* inizializzazione semafori*/
     if((arg.array = (unsigned short *)malloc(sizeof(unsigned short)*3)) == NULL ){
         ERROR_EXIT
     }
-    arg.array[SEM_MASTER] = 1;
-    arg.array[SEM_SOURCE] = 0;
+    arg.array[SEM_MASTER] = param->so_source;
+    arg.array[SEM_SOURCE] = 1;
     arg.array[SEM_TAXI] = 0;
     if(semctl(semid, 0, SETALL, arg.array) == -1){
         ERROR_EXIT
     }
     free(arg.array);
-
-    /* crea la coda di messaggi per le richieste dei taxi */
-    if((qid = msgget(MSGKEY, IPC_CREAT | 0666)) == -1){
-        ERROR_EXIT
-    }
 
     init_stat(stat);   
     
@@ -148,7 +150,7 @@ int main(int argc, char **argv){
         }
     }
 
-    printf(CRED"oko"CDEFAULT"\n");
+    
     
     
 
@@ -159,21 +161,26 @@ int main(int argc, char **argv){
     /* aspetta che il semaforo master diventi 0, lo incrementa per far partire la simulazione e incrementa il semaforo TAXI */
     
     sops[0].sem_num = SEM_MASTER;
-    sops[0].sem_op = 1;
+    sops[0].sem_op = 0;
     sops[0].sem_flg = 0;
 
     sops[1].sem_num = SEM_SOURCE;
     sops[1].sem_op = 1;
     sops[1].sem_flg = 0;
-
+    
     sops[2].sem_num = SEM_TAXI;
     sops[2].sem_op = 1;
     sops[2].sem_flg = 0;
 
+    sops[3].sem_num = SEM_MASTER;
+    sops[3].sem_op = 1;
+    sops[3].sem_flg = 0;
+
     if(semop(semid, sops, 3) == -1){
         ERROR_EXIT
     }
-/*
+    printf(CRED"I vale %d"CDEFAULT"\n", i);
+
     alarm(param->so_duration);
 
     trstat.tv_sec = 5;
@@ -187,11 +194,11 @@ int main(int argc, char **argv){
         sops[0].sem_flg = 0;
         if(semop(semid, sops, 1) == -1){
             ERROR_EXIT
-        }*/
+        }
         /* ogni secondo stampa lo stato di occupazione delle celle */
-       /* print_status_cells(city_map);
+        print_status_cells(city_map);
          time ( &rawtime );
-  timeinfo = localtime ( &rawtime );
+    timeinfo = localtime ( &rawtime );
          printf ( "Current local time and date: %s", asctime (timeinfo) );
          
         sops[0].sem_num = SEM_MASTER;
@@ -203,7 +210,7 @@ int main(int argc, char **argv){
         nanosleep(&trstat, &trestat);
     }
     
-    printf("TEMPO FINITO\n");*/
+    printf("TEMPO FINITO\n");
 
     
     
@@ -213,8 +220,9 @@ int main(int argc, char **argv){
     /* stampa la mappa evidenziando HOLE, SOURCE e TOP_CELLS*/
     for(i = 0; i < param->so_source; i++){
         wait(&status);
-        printf("source terminata\n");
+        
     }
+    printf("processi terminati i %d\n", i);
     print_map(city_map);
 
     /*for(;;){
