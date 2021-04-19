@@ -10,7 +10,7 @@ taxi_t taxi;
 
 int semid;
 
-struct sembuf sops[2];
+struct sembuf sops[3];
 
 void taxi_handler(int sig){
     if(sig == SIGTERM){
@@ -46,7 +46,7 @@ int main(int argc, char** argv){
 
     struct request_queue queue;
 
-    struct timespec treq, trem;
+    struct timespec treq, trem, tsop;
 
     struct sigaction sa;
     sigset_t my_mask;
@@ -89,6 +89,7 @@ int main(int argc, char** argv){
     }
     
     sigaction(SIGTERM, &sa, NULL);
+    /*printf("taxi %ld semmaster vale %d\n", (long)getpid(), semctl(semid, SEM_MASTER, GETVAL));*/
 
     sops[0].sem_num = SEM_MASTER;
     sops[0].sem_op = -1;
@@ -102,11 +103,14 @@ int main(int argc, char** argv){
     sops[0].sem_num = SEM_MASTER;
     sops[0].sem_op = 1;
     sops[0].sem_flg = 0;
-    
-    sops[1].sem_num = SEM_TAXI;
-    sops[1].sem_op = -1;
-    sops[1].sem_flg = 0;
-    if(semop(semid, sops, 2) == -1){
+    if(semop(semid, sops, 1) == -1){
+        ERROR_EXIT
+    }
+
+    sops[0].sem_num = SEM_TAXI;
+    sops[0].sem_op = -1;
+    sops[0].sem_flg = 0;
+    if(semop(semid, sops, 1) == -1){
         ERROR_EXIT
     }
     printf("taxi %ld posizione %d\n", (long)getpid(), taxi.where_taxi);
@@ -120,6 +124,9 @@ int main(int argc, char** argv){
         ERROR_EXIT
     }
     
+    tsop.tv_sec = param->so_timeout;
+    tsop.tv_nsec = 0;
+
     while(t){
         
 
@@ -130,17 +137,43 @@ int main(int argc, char** argv){
         }else{
             
             sigprocmask(SIG_BLOCK, &my_mask, NULL);
-            treq.tv_sec = 0;
-            treq.tv_nsec = get_random(param->so_timensec_min, param->so_timensec_max);
-            if(nanosleep(&treq, &trem) == -1){
-                ERROR_EXIT
-            }
+            
             sops[0].sem_num = SEM_MASTER;
             sops[0].sem_op = -1;
             sops[0].sem_flg = 0;
-            if(semop(semid, sops, 1) == -1){
+            
+            if(semtimedop(semid, sops, 1, &tsop) == -1){
+                if(errno != EAGAIN){
+                    ERROR_EXIT
+                }else{
+                    city_map->m_cell[taxi.where_taxi].n_taxi_here -= 1;
+
+                    sops[0].sem_num = SEM_START;
+                    sops[0].sem_op = 1;
+                    sops[0].sem_flg = 0;
+
+                    sops[1].sem_num = SEM_TAXI;
+                    sops[1].sem_op = 1;
+                    sops[1].sem_flg = 0;
+
+                    /*sops[2].sem_num = SEM_MASTER;
+                    sops[2].sem_op = 1;
+                    sops[2].sem_flg = 0;*/
+
+                    if(semop(semid, sops, 2) == -1){
+                        ERROR_EXIT
+                    }
+                    kill(getppid(), SIGUSR1);
+                    printf(CRED"taxi %ld"CDEFAULT" scattata semtimedop e semstart vale %d semmaster %d semtaxi %d\n", (long)getpid(), semctl(semid, SEM_START, GETVAL), semctl(semid, SEM_MASTER, GETVAL),semctl(semid, SEM_TAXI, GETVAL));
+                    exit(EXIT_FAILURE);
+                }
+            }
+            treq.tv_sec = 0;
+            treq.tv_nsec = city_map->m_cell[taxi.where_taxi].cross_time;
+            if(nanosleep(&treq, &trem) == -1){
                 ERROR_EXIT
             }
+
             /*printf("taxi %ld in posizione %d\n", (long)getpid(), taxi.where_taxi);*/
             
             printf("Taxi %ld sono in %d, dest %d\n", (long)getpid(), taxi.where_taxi, queue.dest_cell);
