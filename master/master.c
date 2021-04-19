@@ -19,7 +19,7 @@ void master_handler(int sig){
     if(sig == SIGALRM){ /* scaduto il tempo della simulazione */
         
         printf("%s ricevuto SIGALRM\n", __FILE__);
-        
+        printf(CRED"TEMPO FINITO"CDEFAULT"\n");
         kill(0, SIGTERM);
         return;
     }
@@ -30,6 +30,22 @@ void master_handler(int sig){
     }
     if(sig == SIGINT){
         printf("%s ricevuto SIGINT pid %ld\n", __FILE__, (long)getpid());
+    }
+
+    if(sig == SIGUSR1){
+        
+            printf(CGREEN"ricevuto SIGUSR1."CDEFAULT" figlio terminato %d\n", wait(NULL));
+            switch(fork()){
+                case -1:
+                    ERROR_EXIT
+                case 0:
+                    if(execl("taxi/taxi", "taxi", (char*) NULL) == -1){
+                        ERROR_EXIT
+                    }
+                default:
+                    printf("Creazione avvenuta\n");
+            }
+        
     }
 }
 
@@ -65,9 +81,9 @@ int main(int argc, char **argv){
     sigfillset(&my_mask);
     sia.sa_mask = my_mask;
     
-    sigaction(SIGALRM, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
     sigaction(SIGINT, &sia, NULL);
+    
     
     /* Creazione SHM */
     if((shm_map = shmget(SHMKEY_MAP, sizeof(map), IPC_CREAT | 0666)) == -1){
@@ -150,7 +166,64 @@ int main(int argc, char **argv){
                 }                  
         }
     }
+    
+    switch(fork()){
+        case -1:
+            ERROR_EXIT
+        case 0:
+            /* ogni 5 secondi stampa lo stato delle celle */
+            sops[0].sem_num = SEM_START;
+            sops[0].sem_op = -1;
+            sops[0].sem_flg = 0;
+            if(semop(semid, sops, 1) == -1){
+                ERROR_EXIT
+            }
 
+            trstat.tv_sec = 5;
+            trstat.tv_nsec = 0;
+            trestat.tv_sec = 0;
+            trestat.tv_sec = 0;
+
+            while(t){
+                print_status_cells(city_map);
+
+                sigprocmask(SIG_BLOCK, &my_mask, NULL);
+                if(nanosleep(&trstat, &trestat) == -1){
+                    ERROR_EXIT
+                }
+                sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
+
+                sigprocmask(SIG_BLOCK, &my_mask, NULL);
+                sops[0].sem_num = SEM_MASTER;
+                sops[0].sem_op = -1;
+                sops[0].sem_flg = 0;
+
+                if(semop(semid, sops, 1) == -1){
+                    ERROR_EXIT
+                }
+
+                /* ogni 5 secondi stampa lo stato di occupazione delle celle */
+                print_status_cells(city_map);
+                 time ( &rawtime );
+            timeinfo = localtime ( &rawtime );
+                 printf ( "Current local time and date: %s", asctime (timeinfo) );
+
+                sops[0].sem_num = SEM_MASTER;
+                sops[0].sem_op = 1;
+                sops[0].sem_flg = 0;
+                if(semop(semid, sops, 1) == -1){
+                    ERROR_EXIT
+                }
+                sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
+                
+            }
+            exit(EXIT_SUCCESS);
+    }
+    
+    /*sigaction(SIGUSR1, &sa, NULL);*/
+    
+
+    /* creazione dei processi taxi */
     for(i = 0; i < param->so_taxi; i++){
         switch(fork()){
             case -1:
@@ -162,9 +235,9 @@ int main(int argc, char **argv){
                 }
         }
     }
-    
-    
 
+    printf(CGREEN"MASTER %ld provvedo a sbloccare tutto"CDEFAULT"\n", (long)getpid());
+    
     /*waitpid(0,NULL,0);*/
 /*print_map(city_map);*/
 
@@ -188,7 +261,7 @@ int main(int argc, char **argv){
     sops[3].sem_flg = 0;*/
 
     sops[3].sem_num = SEM_START;
-    sops[3].sem_op = param->so_taxi + param->so_source;
+    sops[3].sem_op = param->so_taxi + param->so_source + 1;
     sops[3].sem_flg = 0;
     if(semop(semid, sops, 4) == -1){
         ERROR_EXIT
@@ -202,46 +275,19 @@ int main(int argc, char **argv){
         ERROR_EXIT
     }
 */
+    sigaction(SIGALRM, &sa, NULL);
+
     alarm(param->so_duration);
 
-    trstat.tv_sec = 5;
-    trstat.tv_nsec = 0;
-    trestat.tv_sec = 0;
-    trestat.tv_sec = 0;
     
-    while(t){
-        sigprocmask(SIG_BLOCK, &my_mask, NULL);
-        sops[0].sem_num = SEM_MASTER;
-        sops[0].sem_op = -1;
-        sops[0].sem_flg = 0;
-        if(semop(semid, sops, 1) == -1){
-            ERROR_EXIT
-        }
-        /* ogni secondo stampa lo stato di occupazione delle celle */
-        print_status_cells(city_map);
-         time ( &rawtime );
-    timeinfo = localtime ( &rawtime );
-         printf ( "Current local time and date: %s", asctime (timeinfo) );
-         
-        sops[0].sem_num = SEM_MASTER;
-        sops[0].sem_op = 1;
-        sops[0].sem_flg = 0;
-        if(semop(semid, sops, 1) == -1){
-            ERROR_EXIT
-        }
-        nanosleep(&trstat, &trestat);
-        sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
-    }
-    
-    printf("TEMPO FINITO\n");
 
-    
-    
+    while(t);
+    printf("ORA PROCEDO\n");
     
     /*printf("Richieste totali generate: %d\n", stat->n_request);*/
 
     /* stampa la mappa evidenziando HOLE, SOURCE e TOP_CELLS*/
-    for(i = 0; i < param->so_source + param->so_taxi; i++){
+    for(i = 0; i < param->so_source + param->so_taxi + 1; i++){
         printf("terminato %d\n",wait(&status));
         /*wait(&status);*/
     }
