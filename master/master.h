@@ -68,7 +68,7 @@ struct request_queue{
 };
 
 
-enum semaphores{SEM_MASTER, SEM_SOURCE, SEM_TAXI};
+enum semaphores{SEM_MASTER, SEM_SOURCE, SEM_TAXI, SEM_START};
 
 
 /* stampa la mappa evidenzianziando hole, sources e top_cells */

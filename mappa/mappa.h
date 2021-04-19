@@ -12,8 +12,8 @@
 #define BUFSIZE 128
 
 /* parametri definiti a tempo di compilazione */
-#define SO_WIDTH 60
-#define SO_HEIGHT 20
+#define SO_WIDTH 20
+#define SO_HEIGHT 10
 
 /* path file di configurazione*/
 #define CONF_FILE ("file_configurazione/conf.txt")
@@ -66,6 +66,7 @@ int place_source(map *city_map);
 /* genera una cella casuale che non sia hole e sia diversa dalla cella passata come argomento */
 int get_dest_cell(map *city_map, int curr_source_pos);
 
+/* genera una richiesta da terminale */
 int make_request(map* city_map,int qid, int cur_pos);
 
 /* genera un numero random in un range [a,b] con a < b */

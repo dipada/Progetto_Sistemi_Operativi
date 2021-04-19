@@ -14,7 +14,6 @@ struct sembuf sops[2];
 void source_handler(int sig);
 
 
-
 int main(int argc, char** argv){
     
     int shm_map, shm_par, shm_stat;
@@ -52,7 +51,7 @@ int main(int argc, char** argv){
     }
     
     /* ID semafori */
-    if((semid = semget(SEMKEY, 3, 0)) == -1){
+    if((semid = semget(SEMKEY, 4, 0)) == -1){
         ERROR_EXIT
     }
 
@@ -75,28 +74,30 @@ int main(int argc, char** argv){
     sops[0].sem_num = SEM_MASTER;
     sops[0].sem_op = 1;
     sops[0].sem_flg = 0;
+    
+    sops[1].sem_num = SEM_SOURCE;
+    sops[1].sem_op = -1;
+    sops[1].sem_flg = 0;
+    if(semop(semid, sops, 2) == -1){
+        ERROR_EXIT
+    }
+
+    /* in attesa del processo master che autorizza l'avvio della simulazione */
+    /* il master è in attesa dello 0 di SEM_SOURCE */
+    sops[0].sem_num = SEM_START;
+    sops[0].sem_op = -1;
+    sops[0].sem_flg = 0;
     if(semop(semid, sops, 1) == -1){
         ERROR_EXIT
     }
-    
+
     sigaction(SIGINT, &sa, NULL);
-    
+
     while(t){
-        /* in attesa del master che autorizza l'avvio della simulazione */
-        sops[0].sem_num = SEM_SOURCE;
-        sops[0].sem_op = -1;
-        sops[0].sem_flg = 0;
-        if(semop(semid, sops, 1) == -1){
-            ERROR_EXIT
-        }
-        
-
-        
-
     
         /* genera richieste taxi con un intervallo variabile tra 1 nsec - 1 sec */
         treq.tv_sec = 0;
-        treq.tv_nsec = get_random(999999999, 999999999);
+        treq.tv_nsec = get_random(1, 999999999);
         sigprocmask(SIG_BLOCK, &my_mask, NULL);
         if(nanosleep(&treq, &trem) == -1){        
             ERROR_EXIT
@@ -109,6 +110,7 @@ int main(int argc, char** argv){
                 ERROR_EXIT
             }
         }else{
+            sigprocmask(SIG_BLOCK, &my_mask, NULL);
             sops[0].sem_num = SEM_MASTER;
             sops[0].sem_op = -1;
             sops[0].sem_flg = 0;
@@ -116,8 +118,9 @@ int main(int argc, char** argv){
                 ERROR_EXIT
             }
             /* registra l'avvenuta richiesta */
+            
             stat->n_request += 1;
-            printf("Source %ld richiesta registrata\n", (long)getpid());
+            
 
             sops[0].sem_num = SEM_MASTER;
             sops[0].sem_op = 1;
@@ -125,18 +128,17 @@ int main(int argc, char** argv){
             if(semop(semid, sops, 1) == -1){
                 ERROR_EXIT
             }
-        }
-
-        sops[0].sem_num = SEM_SOURCE;
-        sops[0].sem_op = 1;
-        sops[0].sem_flg = 0;
-        if(semop(semid, sops, 1) == -1){
-            ERROR_EXIT
-        }
-    
+            sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
+            
+        }    
     }
-        
-    printf("Source %ld finito\n", (long)getpid());
+
+    sops[0].sem_num = SEM_SOURCE;
+    sops[0].sem_op = 1;
+    sops[0].sem_flg = 0;
+    if(semop(semid, sops, 1) == -1){
+        ERROR_EXIT
+    }
 
     /* detach delle SHM */
     if(shmdt(city_map) == -1){

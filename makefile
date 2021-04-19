@@ -2,7 +2,7 @@ CC= gcc
 CFLAGS= -c -std=c89 -pedantic -Wall
 LINKING= $(CC) -o
 
-all: start_taxicab map source
+all: start_taxicab map source taxi
 	
 start_taxicab: master/master.o master/master_operation.o
 	$(LINKING) start_taxicab master/master.o master/master_operation.o 
@@ -29,4 +29,4 @@ source.o: source/source.c source/source_operation.c
 	$(CC) $(CFLAGS) source/source.c source/source_operation.c
 
 clean:
-	rm -f ./master/*.o ./mappa/*.o ./taxi/*.o ./source/*.o start_taxicab ./source/source mappa/map taxi/taxi
+	rm -f ./**/*.o start_taxicab ./source/source mappa/map taxi/taxi

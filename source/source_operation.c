@@ -13,7 +13,6 @@ int place_source(map *city_map){
 
         if(!city_map->m_cell[rand_position].is_hole && !city_map->m_cell[rand_position].is_source){
             /* la cella non è un hole e non è un source */
-            printf("source %ld in %d\n",(long)getpid(), rand_position);
             city_map->m_cell[rand_position].is_source = 1;
             city_map->m_cell[rand_position].pid_source = (long)getpid();
             i--;

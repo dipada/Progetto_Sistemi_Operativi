@@ -50,7 +50,7 @@ int main(int argc, char **argv){
 
 
     union semun arg;
-    struct sembuf sops[4];
+    struct sembuf sops[5];
 
     struct sigaction sa, sia;
     sigset_t my_mask;
@@ -92,7 +92,7 @@ int main(int argc, char **argv){
     }
     
     /* Creazione dei semafori */
-    if((semid = semget(SEMKEY, 3, IPC_CREAT | 0666)) == -1){
+    if((semid = semget(SEMKEY, 4, IPC_CREAT | 0666)) == -1){
         ERROR_EXIT
     }
     
@@ -123,12 +123,13 @@ int main(int argc, char **argv){
     }
 
     /* inizializzazione semafori*/
-    if((arg.array = (unsigned short *)malloc(sizeof(unsigned short)*3)) == NULL ){
+    if((arg.array = (unsigned short *)malloc(sizeof(unsigned short)*4)) == NULL ){
         ERROR_EXIT
     }
     arg.array[SEM_MASTER] = 1;
     arg.array[SEM_SOURCE] = param->so_source;
-    arg.array[SEM_TAXI] = 0;
+    arg.array[SEM_TAXI] = param->so_taxi;
+    arg.array[SEM_START] = 0;
     if(semctl(semid, 0, SETALL, arg.array) == -1){
         ERROR_EXIT
     }
@@ -143,14 +144,24 @@ int main(int argc, char **argv){
                 ERROR_EXIT
 
             case 0: /* ----- codice figlio ----- */
-                /* posiziona SO_SOURCE e genera SO_TAXI  */
-                if(execl("source/source", "source", (char *) NULL)){
+                /* posiziona source e le avvia */
+                if(execl("source/source", "source", (char *) NULL) == -1){
                     ERROR_EXIT
                 }                  
         }
     }
 
-    
+    for(i = 0; i < param->so_taxi; i++){
+        switch(fork()){
+            case -1:
+                ERROR_EXIT
+            case 0: /* ----- codice figlio ------ */
+                /* posiziona i taxi e li avvia */
+                if(execl("taxi/taxi", "taxi", (char*) NULL) == -1){
+                    ERROR_EXIT
+                }
+        }
+    }
     
     
 
@@ -165,18 +176,32 @@ int main(int argc, char **argv){
     sops[0].sem_flg = 0;
     
     sops[1].sem_num = SEM_TAXI;
-    sops[1].sem_op = 1;
+    sops[1].sem_op = 0;                 /* tutti i processi taxi si sono posizionati */
     sops[1].sem_flg = 0;
 
     sops[2].sem_num = SEM_SOURCE;
-    sops[2].sem_op = 1;
+    sops[2].sem_op = param->so_source;
     sops[2].sem_flg = 0;
 
-    if(semop(semid, sops, 3) == -1){
+    /*sops[3].sem_num = SEM_TAXI;
+    sops[3].sem_op = 1;
+    sops[3].sem_flg = 0;*/
+
+    sops[3].sem_num = SEM_START;
+    sops[3].sem_op = param->so_taxi + param->so_source;
+    sops[3].sem_flg = 0;
+    if(semop(semid, sops, 4) == -1){
         ERROR_EXIT
     }
-    printf(CRED"I vale %d"CDEFAULT"\n", i);
-
+    printf(CRED"tutti processi pronti"CDEFAULT"\n");
+    
+    /*sops[0].sem_num = SEM_START;
+    sops[0].sem_op = param->so_source;
+    sops[0].sem_flg = 0;
+    if(semop(semid, sops, 1) == -1){
+        ERROR_EXIT
+    }
+*/
     alarm(param->so_duration);
 
     trstat.tv_sec = 5;
@@ -185,6 +210,7 @@ int main(int argc, char **argv){
     trestat.tv_sec = 0;
     
     while(t){
+        sigprocmask(SIG_BLOCK, &my_mask, NULL);
         sops[0].sem_num = SEM_MASTER;
         sops[0].sem_op = -1;
         sops[0].sem_flg = 0;
@@ -204,6 +230,7 @@ int main(int argc, char **argv){
             ERROR_EXIT
         }
         nanosleep(&trstat, &trestat);
+        sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
     }
     
     printf("TEMPO FINITO\n");
@@ -214,11 +241,12 @@ int main(int argc, char **argv){
     /*printf("Richieste totali generate: %d\n", stat->n_request);*/
 
     /* stampa la mappa evidenziando HOLE, SOURCE e TOP_CELLS*/
-    for(i = 0; i < param->so_source; i++){
-        wait(&status);
-        
+    for(i = 0; i < param->so_source + param->so_taxi; i++){
+        printf("terminato %d\n",wait(&status));
+        /*wait(&status);*/
     }
     printf("processi terminati i %d\n", i);
+    printf("numero richieste %d\n", stat->n_request);
     print_map(city_map);
 
     /*for(;;){
@@ -229,7 +257,9 @@ int main(int argc, char **argv){
     
     /*print_status_cells(city_map);*/
     
-    
+    time ( &rawtime );
+    timeinfo = localtime ( &rawtime );
+         printf ( "Current local time and date: %s", asctime (timeinfo) );
 
     /* rimuove la coda di messaggi */
     if(msgctl(qid, IPC_RMID, NULL)){
