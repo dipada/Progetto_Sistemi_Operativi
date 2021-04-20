@@ -15,25 +15,23 @@ Alla fine della simulazione vengono stampati:
 
 static int t = 1;
 
+
+
 void master_handler(int sig){
     if(sig == SIGALRM){ /* scaduto il tempo della simulazione */
         
-        printf("%s ricevuto SIGALRM\n", __FILE__);
+        kill(0, SIGTERM);    
+        
+        printf(CRED"%s ricevuto SIGALRM"CDEFAULT"\n", __FILE__);
         printf(CRED"TEMPO FINITO"CDEFAULT"\n");
-        kill(0, SIGTERM);
-        return;
     }
     if(sig == SIGTERM){
-        printf("%s Ricevuto SIGTERM\n", __FILE__);
+        /*printf("%s Ricevuto SIGTERM\n", __FILE__);*/
         t = 0;
-        return;
-    }
-    if(sig == SIGINT){
-        printf("%s ricevuto SIGINT pid %ld\n", __FILE__, (long)getpid());
     }
 
-    if(sig == SIGUSR1){
-        
+    if(sig == SIGCHLD){
+        if(t){
             printf(CGREEN"ricevuto SIGUSR1."CDEFAULT" figlio terminato %d\n", wait(NULL));
             switch(fork()){
                 case -1:
@@ -45,7 +43,7 @@ void master_handler(int sig){
                 default:
                     printf("Creazione avvenuta\n");
             }
-        
+        }
     }
 }
 
@@ -68,7 +66,7 @@ int main(int argc, char **argv){
     union semun arg;
     struct sembuf sops[5];
 
-    struct sigaction sa, sia;
+    struct sigaction sa, sa_old, sia;
     sigset_t my_mask;
 
     sa.sa_handler = &master_handler;
@@ -81,7 +79,8 @@ int main(int argc, char **argv){
     sigfillset(&my_mask);
     sia.sa_mask = my_mask;
     
-    sigaction(SIGTERM, &sa, NULL);
+    
+    sigaction(SIGALRM, &sa, NULL);
     sigaction(SIGINT, &sia, NULL);
     
     
@@ -220,7 +219,7 @@ int main(int argc, char **argv){
             exit(EXIT_SUCCESS);
     }
     
-    /*sigaction(SIGUSR1, &sa, NULL);*/
+    sigaction(SIGCHLD, &sa, &sa_old);
     
 
     /* creazione dei processi taxi */
@@ -238,8 +237,7 @@ int main(int argc, char **argv){
 
     printf(CGREEN"MASTER %ld provvedo a sbloccare tutto"CDEFAULT"\n", (long)getpid());
     
-    /*waitpid(0,NULL,0);*/
-/*print_map(city_map);*/
+    /*print_map(city_map);*/
 
     /* la simulazione parte dopo che sia taxi sia source sono stati creati e inizializzati */
     /* aspetta che il semaforo master diventi 0, lo incrementa per far partire la simulazione e incrementa il semaforo TAXI */
@@ -252,18 +250,18 @@ int main(int argc, char **argv){
     sops[1].sem_op = 0;                 /* tutti i processi taxi si sono posizionati */
     sops[1].sem_flg = 0;
 
-    sops[2].sem_num = SEM_SOURCE;
+    /*sops[2].sem_num = SEM_SOURCE;
     sops[2].sem_op = param->so_source;
     sops[2].sem_flg = 0;
 
-    /*sops[3].sem_num = SEM_TAXI;
-    sops[3].sem_op = 1;
+    sops[3].sem_num = SEM_TAXI;
+    sops[3].sem_op = param->so_taxi;
     sops[3].sem_flg = 0;*/
 
-    sops[3].sem_num = SEM_START;
-    sops[3].sem_op = param->so_taxi + param->so_source + 1;
-    sops[3].sem_flg = 0;
-    if(semop(semid, sops, 4) == -1){
+    sops[2].sem_num = SEM_START;
+    sops[2].sem_op = param->so_taxi + param->so_source + 1;
+    sops[2].sem_flg = 0;
+    if(semop(semid, sops, 3) == -1){
         ERROR_EXIT
     }
     printf(CRED"tutti processi pronti"CDEFAULT"\n");
@@ -275,26 +273,32 @@ int main(int argc, char **argv){
         ERROR_EXIT
     }
 */
-    sigaction(SIGALRM, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+    printf(CGREEN"setto alarm a %d"CDEFAULT"\n", param->so_duration);
 
     alarm(param->so_duration);
 
     
 
     while(t);
+    sigaction(SIGCHLD, &sa_old, &sa);
     printf("ORA PROCEDO\n");
     
     /*printf("Richieste totali generate: %d\n", stat->n_request);*/
 
+    
     /* stampa la mappa evidenziando HOLE, SOURCE e TOP_CELLS*/
     for(i = 0; i < param->so_source + param->so_taxi + 1; i++){
-        printf("terminato %d\n",wait(&status));
+        printf("terminato %d\n",waitpid(0, &status, 0));
         /*wait(&status);*/
     }
     printf("processi terminati i %d\n", i);
     printf("numero richieste %d\n", stat->n_request);
     print_map(city_map);
 
+    printf("master semmaster %d\n", semctl(semid, SEM_MASTER, GETVAL));
+    printf("master semsource %d\n", semctl(semid, SEM_SOURCE, GETVAL));
+    printf("master semtaxi %d\n", semctl(semid, SEM_TAXI, GETVAL));
     /*for(;;){
         print_status_cells(city_map);
         sleep(1);
