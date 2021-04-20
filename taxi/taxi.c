@@ -142,7 +142,7 @@ int main(int argc, char** argv){
             sops[0].sem_op = -1;
             sops[0].sem_flg = 0;
             
-            if(semtimedop(semid, sops, 1, &tsop) == -1){
+            if(semop(semid, sops, 1) == -1){
                 if(errno != EAGAIN){
                     ERROR_EXIT
                 }else{
