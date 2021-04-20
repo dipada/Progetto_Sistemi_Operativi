@@ -18,6 +18,8 @@ typedef struct{
 
 /* posiziona il TAXI casualmente sulla mappa */
 void place_taxi(map *city_map, taxi_t *taxi);
+/* preleva una richiesta dalla coda di messaggi */
+int take_request(map* city_map, int qid, taxi_t* taxi, struct request_queue* queue);
 
 /* ----- MOVIMENTO TAXI ----- */
 
