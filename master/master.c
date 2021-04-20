@@ -30,7 +30,7 @@ void master_handler(int sig){
         t = 0;
     }
 
-    if(sig == SIGCHLD){
+    if(sig == SIGUSR1){
         if(t){
             printf(CGREEN"ricevuto SIGUSR1."CDEFAULT" figlio terminato %d\n", wait(NULL));
             switch(fork()){

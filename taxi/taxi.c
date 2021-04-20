@@ -57,7 +57,7 @@ int main(int argc, char** argv){
 
     struct request_queue queue;
 
-    struct timespec treq, trem;
+    struct timespec treq, trem, tsop;
 
     struct sigaction sa;
     sigset_t my_mask;
@@ -136,8 +136,8 @@ int main(int argc, char** argv){
         ERROR_EXIT
     }
     
-    /*tsop.tv_sec = param->so_timeout;
-    tsop.tv_nsec = 0;*/
+    tsop.tv_sec = param->so_timeout;
+    tsop.tv_nsec = 0;
 
     while(t){
         /* TODO verificare se è in una cella source */
@@ -159,8 +159,14 @@ int main(int argc, char** argv){
                 sops[0].sem_op = -1;
                 sops[0].sem_flg = 0;
 
-                if(semop(semid, sops, 1) == -1){
-                    ERROR_EXIT
+                if(semtimedop(semid, sops, 1, &tsop) == -1){
+                    if(errno == EAGAIN){
+                        city_map->m_cell[taxi.where_taxi].n_taxi_here -= 1;
+                        printf("taxi %ld "CRED"USCITA SEMTIMEDOP"CDEFAULT"\n",(long)getpid());
+                        exit(EXIT_FAILURE);
+                    }else{
+                        ERROR_EXIT
+                    }
                 }else{
                 
                     /* va alla cella destinazione. Fa un solo movimento la volta */
@@ -168,6 +174,11 @@ int main(int argc, char** argv){
                         /*printf("Taxi %ld sono in %d, dest %d t vale = %d\n", (long)getpid(), taxi.where_taxi, queue.dest_cell, t);*/
                         go_cell(city_map, &taxi, queue.dest_cell);
                         
+                        treq.tv_sec = 0;
+                        treq.tv_nsec = city_map->m_cell[taxi.where_taxi].cross_time;
+                        if(nanosleep(&treq, &trem) == -1){
+                            ERROR_EXIT
+                        }
                         if(curr_pos != taxi.where_taxi){ /* il taxi si è mosso */
                         /*printf(CGREEN"Taxi %ld curpos %d taxiwhere %d "CDEFAULT"\n", (long)getpid(), curr_pos, taxi.where_taxi);*/
                             /*alarm(param->so_timeout);*/
@@ -185,11 +196,7 @@ int main(int argc, char** argv){
                         ERROR_EXIT
                     }
 
-                    treq.tv_sec = 0;
-                    treq.tv_nsec = city_map->m_cell[taxi.where_taxi].cross_time;
-                    if(nanosleep(&treq, &trem) == -1){
-                        ERROR_EXIT
-                    }
+                    
                 }
                 /*sigprocmask(SIG_UNBLOCK, &my_mask, NULL);*/
             
