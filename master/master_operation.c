@@ -60,7 +60,7 @@ void print_status_cells(map *city_map){
     printf("cells capacity status\n");
     /* stampo la riga iniziale della mappa */
     
-    printf(CRED"*"CDEFAULT"---");
+    printf(CRED"*"CDEFAULT"--");
     for(i=0; i<SO_WIDTH-1; i++){ 
 	    printf("---");
 	}
@@ -71,7 +71,7 @@ void print_status_cells(map *city_map){
     for(i = 0; i < SO_WIDTH*SO_HEIGHT; i++){
         
         if( (((float)city_map->m_cell[i].n_taxi_here/city_map->m_cell[i].capacity)*100) == 100){
-            printf(" F ");
+            printf("  F");
         }else{
             printf(" %2.f", ((float)city_map->m_cell[i].n_taxi_here/city_map->m_cell[i].capacity)*100);
         }

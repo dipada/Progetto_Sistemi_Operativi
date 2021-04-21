@@ -36,7 +36,7 @@ void master_handler(int sig){
         
         wait(NULL);
         
-            /*printf(CGREEN"ricevuto SIGUSR1."CDEFAULT" figlio terminato %d\n", wait(NULL));*/
+            printf(CGREEN"ricevuto SIGUSR1."CDEFAULT" figlio terminato %d\n", wait(NULL));
             switch(fork()){
                 case -1:
                     ERROR_EXIT
@@ -46,7 +46,7 @@ void master_handler(int sig){
                     }
                 default:
                     d++;
-                    /*printf("Creazione avvenuta\n");*/
+                    printf(CYELLOW"Creazione avvenuta"CDEFAULT"\n");
             }
         
     }
@@ -75,8 +75,8 @@ int main(int argc, char **argv){
     sigset_t my_mask;
 
     sa.sa_handler = &master_handler;
-    sa.sa_flags = 0;
-    sigfillset(&my_mask);
+    sa.sa_flags = SA_NODEFER;
+    sigemptyset(&my_mask);
     sa.sa_mask = my_mask;
 
     sia.sa_handler = SIG_IGN;
