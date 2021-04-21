@@ -178,7 +178,7 @@ int mv_dx(map* city_map, taxi_t *taxi, int curr_pos){
         taxi->pid_cell_taxi = city_map->m_cell[new_pos].pid_source;
         taxi->where_taxi = new_pos;
     
-    printf("Il taxi %ld è andato a dx da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);
+    /*printf("Il taxi %ld è andato a dx da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);*/
 
     return new_pos;
     }
@@ -197,7 +197,7 @@ int mv_sx(map* city_map, taxi_t *taxi, int curr_pos){
         taxi->pid_cell_taxi = city_map->m_cell[new_pos].pid_source;
         taxi->where_taxi = new_pos;
     
-    printf("Il taxi %ld è andato a sx da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);
+    /*printf("Il taxi %ld è andato a sx da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);*/
     return new_pos;
     }
     return curr_pos;    
@@ -215,7 +215,7 @@ int mv_dw(map* city_map, taxi_t *taxi, int curr_pos){
         taxi->pid_cell_taxi = city_map->m_cell[new_pos].pid_source;
         taxi->where_taxi = new_pos;
     
-    printf("Il taxi %ld è andato giu da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);
+    /*printf("Il taxi %ld è andato giu da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);*/
     return new_pos;
     }
     return curr_pos;    
@@ -234,7 +234,7 @@ int mv_up(map* city_map, taxi_t *taxi, int curr_pos){
         taxi->where_taxi = new_pos;
     
 
-    printf("Il taxi %ld è andato a su da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);
+    /*printf("Il taxi %ld è andato a su da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);*/
     return new_pos;
     }
     return curr_pos;

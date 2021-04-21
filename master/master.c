@@ -14,13 +14,15 @@ Alla fine della simulazione vengono stampati:
 #include "../taxi/taxi.h"
 
 static int t = 1;
+static int d = 0;
 
-
+struct sembuf sops[5];
+int semid;
 
 void master_handler(int sig){
     if(sig == SIGALRM){ /* scaduto il tempo della simulazione */
         
-        kill(0, SIGTERM);    
+        kill(0, SIGTERM); 
         
         printf(CRED"%s ricevuto SIGALRM"CDEFAULT"\n", __FILE__);
         printf(CRED"TEMPO FINITO"CDEFAULT"\n");
@@ -31,8 +33,10 @@ void master_handler(int sig){
     }
 
     if(sig == SIGUSR1){
-        if(t){
-            printf(CGREEN"ricevuto SIGUSR1."CDEFAULT" figlio terminato %d\n", wait(NULL));
+        
+        wait(NULL);
+        
+            /*printf(CGREEN"ricevuto SIGUSR1."CDEFAULT" figlio terminato %d\n", wait(NULL));*/
             switch(fork()){
                 case -1:
                     ERROR_EXIT
@@ -41,9 +45,10 @@ void master_handler(int sig){
                         ERROR_EXIT
                     }
                 default:
-                    printf("Creazione avvenuta\n");
+                    d++;
+                    /*printf("Creazione avvenuta\n");*/
             }
-        }
+        
     }
 }
 
@@ -51,7 +56,7 @@ void master_handler(int sig){
 
 int main(int argc, char **argv){
 
-    int status, shm_map, shm_par, shm_stat, semid, qid, i;
+    int status, shm_map, shm_par, shm_stat, qid, i;
     pid_t pid;
     map *city_map;
     struct parameters *param;
@@ -64,9 +69,9 @@ int main(int argc, char **argv){
 
 
     union semun arg;
-    struct sembuf sops[5];
+    
 
-    struct sigaction sa, sa_old, sia;
+    struct sigaction sa, sia;
     sigset_t my_mask;
 
     sa.sa_handler = &master_handler;
@@ -219,7 +224,7 @@ int main(int argc, char **argv){
             exit(EXIT_SUCCESS);
     }
     
-    sigaction(SIGCHLD, &sa, &sa_old);
+    sigaction(SIGUSR1, &sa, NULL);
     
 
     /* creazione dei processi taxi */
@@ -281,16 +286,25 @@ int main(int argc, char **argv){
     
 
     while(t);
-    sigaction(SIGCHLD, &sa_old, &sa);
     printf("ORA PROCEDO\n");
+    printf("ignoro i segnali ora\n");
+    sigaction(SIGUSR1, &sia, NULL);
+    
+    printf("invio sigterm a tutti\n");
+    kill(0, SIGTERM);
+    
     
     /*printf("Richieste totali generate: %d\n", stat->n_request);*/
-
     
+
+    printf("sosource %d sotaxi %d d %d\n", param->so_source, param->so_taxi, d);
     /* stampa la mappa evidenziando HOLE, SOURCE e TOP_CELLS*/
-    for(i = 0; i < param->so_source + param->so_taxi + 1; i++){
+    for(i = 0; i < param->so_source + param->so_taxi + d + 1; i++){
+        sigprocmask(SIG_BLOCK, &my_mask, NULL);
         printf("terminato %d\n",waitpid(0, &status, 0));
+        /*waitpid(0, &status, WNOHANG);*/
         /*wait(&status);*/
+        sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
     }
     printf("processi terminati i %d\n", i);
     printf("numero richieste %d\n", stat->n_request);
@@ -299,6 +313,7 @@ int main(int argc, char **argv){
     printf("master semmaster %d\n", semctl(semid, SEM_MASTER, GETVAL));
     printf("master semsource %d\n", semctl(semid, SEM_SOURCE, GETVAL));
     printf("master semtaxi %d\n", semctl(semid, SEM_TAXI, GETVAL));
+    printf("D vale %d\n", d);
     /*for(;;){
         print_status_cells(city_map);
         sleep(1);
@@ -311,6 +326,7 @@ int main(int argc, char **argv){
     timeinfo = localtime ( &rawtime );
          printf ( "Current local time and date: %s", asctime (timeinfo) );
 
+    printf("richieste %d eseguite %d abortite %d inevase %d\n", stat->n_request, stat->success_req, stat->aborted_req, stat->outstanding_req);
     /* rimuove la coda di messaggi */
     if(msgctl(qid, IPC_RMID, NULL)){
         ERROR_EXIT
