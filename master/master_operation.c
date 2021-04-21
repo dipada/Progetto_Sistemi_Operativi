@@ -62,7 +62,7 @@ void print_status_cells(map *city_map){
     
     printf(CRED"*"CDEFAULT"---");
     for(i=0; i<SO_WIDTH-1; i++){ 
-	    printf("----");
+	    printf("---");
 	}
 	printf(CRED"*"CDEFAULT"\n");
     
@@ -71,16 +71,16 @@ void print_status_cells(map *city_map){
     for(i = 0; i < SO_WIDTH*SO_HEIGHT; i++){
         
         if( (((float)city_map->m_cell[i].n_taxi_here/city_map->m_cell[i].capacity)*100) == 100){
-            printf("| F ");
+            printf(" F ");
         }else{
-            printf("|%2.f%%", ((float)city_map->m_cell[i].n_taxi_here/city_map->m_cell[i].capacity)*100);
+            printf(" %2.f", ((float)city_map->m_cell[i].n_taxi_here/city_map->m_cell[i].capacity)*100);
         }
         
         if((i+1)%SO_WIDTH == 0){ /* se è l'ultima colonna della riga stampa "|" e stampa una riga di separazione */
-            printf("|\n");
-            printf(CRED"*"CDEFAULT"---");
+            printf("\n");
+            printf(CRED"*"CDEFAULT"--");
             for(j = 0; j < SO_WIDTH-1; j++){
-                printf("----");
+                printf("---");
             }
             printf(CRED"*"CDEFAULT"\n");
         }

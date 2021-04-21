@@ -189,17 +189,18 @@ int main(int argc, char** argv){
                         }*/
 
                     /*printf("taxi %ld in posizione %d\n", (long)getpid(), taxi.where_taxi);*/
-                    treq.tv_sec = 0;
-                    treq.tv_nsec = city_map->m_cell[taxi.where_taxi].cross_time;
-                    if(nanosleep(&treq, &trem) == -1){
-                        ERROR_EXIT
-                    }
+                    
 
 
                     sops[0].sem_num = SEM_MASTER;
                     sops[0].sem_op = 1;
                     sops[0].sem_flg = 0;
                     if(semop(semid, sops, 1) == -1){
+                        ERROR_EXIT
+                    }
+                    treq.tv_sec = 0;
+                    treq.tv_nsec = city_map->m_cell[taxi.where_taxi].cross_time;
+                    if(nanosleep(&treq, &trem) == -1){
                         ERROR_EXIT
                     }
                     
