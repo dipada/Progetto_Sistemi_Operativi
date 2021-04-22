@@ -26,7 +26,7 @@ void print_map(map *city_map, int n_top_cells){
 
     /* inizializza il vettore delle celle */
     for(i = 0; i < n_top_cells; i++){
-        tcel[i] = i;
+        tcel[i] = -1;
     }
 
     for(i = 0; i < n_top_cells; i++){
@@ -34,7 +34,7 @@ void print_map(map *city_map, int n_top_cells){
     }
 
     /* ordina il vettore in base al numero di transizioni */
-    for(i = 0; i < n_top_cells - 1; i++){
+    /*for(i = 0; i < n_top_cells - 1; i++){
         for(j = i + 1; j < n_top_cells; j++ ){
             if(city_map->m_cell[tcel[i]].transitions > city_map->m_cell[tcel[j]].transitions){
                 temp = tcel[i];
@@ -42,18 +42,30 @@ void print_map(map *city_map, int n_top_cells){
                 tcel[j] = temp;
             }
         }
-    }
-
-    /* recupero le celle più attraversate */
-    /*for(i = 0; i < SO_WIDTH*SO_HEIGHT-1 ; i++){
-        printf("cella i %d ntra %ld\n", i, city_map->m_cell[i].transitions);
-        
-            if(city_map->m_cell[i].transitions > city_map->m_cell[tcel[j]].transitions){
-                tcel[j] = i;
-            }
-        
     }*/
 
+    /* recupero le celle più attraversate */
+    for(i = 0; i < SO_WIDTH*SO_HEIGHT-1 ; i++){
+        printf("cella i %d ntra %ld\n", i, city_map->m_cell[i].transitions);
+        
+          /*  if(city_map->m_cell[i].transitions > city_map->m_cell[tcel[j]].transitions){
+                tcel[j] = i;
+            }*/
+        
+    }
+
+    for(i = 0; i < n_top_cells; i++){
+        for(j = 0; j < SO_WIDTH*SO_WIDTH-1; j++){
+            if(city_map->m_cell[j].transitions > city_map->m_cell[j+1].transitions){
+                temp = j;
+            }else{
+                temp = j+1;
+            }
+        }
+        tcel[i] = temp;
+    }
+
+    printf("\n");
     for(i = 0; i < n_top_cells; i++){
         printf("pod %d val %d tans %ld\n", i, tcel[i], city_map->m_cell[tcel[i]].transitions  );
     }
