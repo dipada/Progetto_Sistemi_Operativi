@@ -17,66 +17,32 @@ void init_stat(struct statistic *stat){
 /* stampa la mappa evidenzianziando hole, sources e top_cells */
 void print_map(map *city_map, int n_top_cells){
     int register i,j; 
-    int temp, max, min;
+    int temp = 1;
     int *tcel;
     
-    if((tcel = (int *)malloc(sizeof(int) * n_top_cells ))== NULL){
+    if((tcel = (int *) malloc(sizeof(int)*n_top_cells) )== NULL){
         ERROR_EXIT
     }
 
     /* inizializza il vettore delle celle */
     for(i = 0; i < n_top_cells; i++){
-        tcel[i] = -1;
+        tcel[i] = i;
     }
 
-    for(i = 0; i < n_top_cells; i++){
-        printf("pod %d val %d tans %ld\n", i, tcel[i], city_map->m_cell[tcel[i]].transitions );
-    }
-
-    /* ordina il vettore in base al numero di transizioni */
-    /*for(i = 0; i < n_top_cells - 1; i++){
-        for(j = i + 1; j < n_top_cells; j++ ){
-            if(city_map->m_cell[tcel[i]].transitions > city_map->m_cell[tcel[j]].transitions){
-                temp = tcel[i];
-                tcel[i] = tcel[j];
-                tcel[j] = temp;
-            }
+    for(i = 0; i < SO_WIDTH*SO_HEIGHT; i++){ /* giro tutte le celle della mappa */
+        sort_vector_transition(tcel, n_top_cells, city_map);
+        if(city_map->m_cell[i].transitions > city_map->m_cell[tcel[0]].transitions){ /* confronto la prima posizione del vettore tcel */
+            temp = 1;
+            for(j = 0; j < n_top_cells; j++){ /* controllo che tale posizione non sia già presente nel vettore */
+                    if(tcel[j] == i){
+                        temp = 0;                        
+                    }
+                }
+                if(temp){ /* solo se non già presente nel vettore tale posizione viene aggiunta */
+                    tcel[0] = i;
+                }
         }
-    }*/
-
-    /* recupero le celle più attraversate */
-    for(i = 0; i < SO_WIDTH*SO_HEIGHT ; i++){
-        printf("cella i %d ntra %ld\n", i, city_map->m_cell[i].transitions);
     }
-
-   
-    for(i = 0; i < SO_WIDTH*SO_HEIGHT; i++){ /* per ogni elemento della mappa cerco il massimo */
-        max = 0;
-        if(city_map->m_cell[max].transitions > city_map->m_cell[i].transitions){
-            min = i;
-        }
-        if(city_map->m_cell[max].transitions < city_map->m_cell[i].transitions){
-            /* numero transizioni minore o uguale */
-            max = i;
-        }
-        /* registro la posizione max nel vettore ncell */
-
-    }
-    printf("max pos %d ntra %ld, min pos %d ntra %ld\n", max, city_map->m_cell[max].transitions, min, city_map->m_cell[min].transitions);
-
-    printf("\n");
-    for(i = 0; i < n_top_cells; i++){
-        printf("pod %d val %d tans %ld\n", i, tcel[i], city_map->m_cell[tcel[i]].transitions  );
-    }
-
-/*    for(i = 0; i < n_top_cells; i++){
-        printf("pos %d val %d trans %ld\n", i, tcel[i], city_map->m_cell[tcel[i]].transitions);
-    }
-*/
-    /* recupero le celle più attraversate */
-    /*for(i = 0; i < SO_WIDTH*SO_HEIGHT; i++){
-    */    
-    
 
     printf("*-");
     /* stampo la riga iniziale della mappa */
@@ -88,14 +54,23 @@ void print_map(map *city_map, int n_top_cells){
     /* stampo le righe della mappa suddividendole per celle
        evidenzio SO_HOLES ( X rossa )
        SO_SOURCES ( S verde )
-       SO_TOP_CELLS ( * YELLOW )  TODO
+       SO_TOP_CELLS ( * giallo ) 
+       SO_SOURCE AND SO_TOP_CELLS ( S gialla )
      */
     for(i = 0; i < SO_WIDTH*SO_HEIGHT; i++){
-        if(city_map->m_cell[i].is_hole == 1 || city_map->m_cell[i].is_source == 1){
-            if(city_map->m_cell[i].is_hole == 1){
+        if(city_map->m_cell[i].is_hole == 1 || city_map->m_cell[i].is_source == 1 || is_top_cell(i, tcel, n_top_cells)){
+            if(city_map->m_cell[i].is_hole){
                 printf("|"CRED"X"CDEFAULT);
-            }else{            
-                printf("|"CGREEN"S"CDEFAULT);
+            }else{
+                if(city_map->m_cell[i].is_source){      
+                    if(city_map->m_cell[i].is_source && is_top_cell(i, tcel, n_top_cells)){
+                        printf("|"CYELLOW"S"CDEFAULT);
+                    }else{
+                        printf("|"CGREEN"S"CDEFAULT);
+                    }
+                }else{
+                    printf("|"CYELLOW"*"CDEFAULT);
+                }
             }
         }else{
             printf("| ");
@@ -110,7 +85,7 @@ void print_map(map *city_map, int n_top_cells){
         }
     }
     printf("\n");
-    printf("Legend: "CRED"X"CDEFAULT" Holes "CGREEN"S"CDEFAULT" Sources "CYELLOW"*"CDEFAULT" Top_Cells\n");
+    printf("Legend: "CRED"X"CDEFAULT" Holes "CGREEN"S"CDEFAULT" Sources "CYELLOW"*"CDEFAULT" Top_Cell "CYELLOW"S"CDEFAULT" Source and Top_Cell\n");
     fflush(stdout);
     free(tcel);
 }
@@ -120,8 +95,8 @@ void print_status_cells(map *city_map){
     int register i, j;
     
     printf("cells capacity status percentage. F = 100%%\n");
-    /* stampo la riga iniziale della mappa */
     
+    /* stampo la riga iniziale della mappa */
     printf(CRED"*"CDEFAULT"--");
     for(i=0; i<SO_WIDTH-1; i++){ 
 	    printf("---");
@@ -129,10 +104,9 @@ void print_status_cells(map *city_map){
 	printf(CRED"*"CDEFAULT"\n");
     
     /* stampo le righe della mappa suddividendole per celle */
-    
     for(i = 0; i < SO_WIDTH*SO_HEIGHT; i++){
         
-        if( (((float)city_map->m_cell[i].n_taxi_here/city_map->m_cell[i].capacity)*100) == 100){
+        if((((float)city_map->m_cell[i].n_taxi_here/city_map->m_cell[i].capacity)*100) == 100){
             printf("  F");
         }else{
             printf(" %2.f", ((float)city_map->m_cell[i].n_taxi_here/city_map->m_cell[i].capacity)*100);
@@ -149,4 +123,31 @@ void print_status_cells(map *city_map){
     }
     printf("\n");
     fflush(stdout);
+}
+
+/* ordina per numero di transizioni il vettore passato */
+void sort_vector_transition(int* vet, int length, map* city_map){
+    int register i,j;
+    int temp;
+    for(i = 0; i < length - 1; i++){
+        for(j = i + 1; j < length; j++ ){
+            if(city_map->m_cell[vet[i]].transitions > city_map->m_cell[vet[j]].transitions){
+                temp = vet[i];
+                vet[i] = vet[j];
+                vet[j] = temp;
+            }
+        }
+    }
+}
+
+/* verifica se la cella è una top cell */
+int is_top_cell(int pos, const int* vet, int length){
+    int register i;
+    int f = 0;
+    for(i = 0; i < length; i++){
+        if(vet[i] == pos){
+            f = 1;
+        }
+    }
+    return f;
 }

@@ -13,7 +13,6 @@ struct sembuf sops[2];
 
 void source_handler(int sig);
 
-
 int main(int argc, char** argv){
     
     int shm_map, shm_par, shm_stat;
@@ -28,7 +27,6 @@ int main(int argc, char** argv){
     sa.sa_flags = 0;
     sigfillset(&my_mask);
     sa.sa_mask = my_mask;
-
 
     /* recupero dell'ID e attach SHM */
     if((shm_map = shmget(SHMKEY_MAP, sizeof(map), 0)) == -1){
@@ -107,6 +105,21 @@ int main(int argc, char** argv){
         /* preparazione e invio della richiesta */    
         if(make_request(city_map, qid, source_pos) == -1){
             if(errno != EAGAIN){
+                sops[0].sem_num = SEM_ST;
+                sops[0].sem_op = -1;
+                sops[0].sem_flg = 0;
+                if(semop(semid, sops, 1) == -1){
+                    ERROR_EXIT
+                }
+                
+                stat->outstanding_req += 1;
+
+                sops[0].sem_num = SEM_ST;
+                sops[0].sem_op = 1;
+                sops[0].sem_flg = 0;
+                if(semop(semid, sops, 1) == -1){
+                    ERROR_EXIT
+                }
                 exit(EXIT_FAILURE);
             }
         }else{
@@ -117,8 +130,8 @@ int main(int argc, char** argv){
             if(semop(semid, sops, 1) == -1){
                 ERROR_EXIT
             }
+
             /* registra l'avvenuta richiesta */
-            
             stat->n_request += 1;
             
 

@@ -14,45 +14,9 @@ Alla fine della simulazione vengono stampati:
 #include "../taxi/taxi.h"
 
 static int t = 1;
-static int d = 0;
 
 struct sembuf sops[5];
 int semid;
-
-void master_handler(int sig){
-    if(sig == SIGALRM){ /* scaduto il tempo della simulazione */
-        
-        kill(0, SIGTERM); 
-        
-       /* printf(CRED"%s ricevuto SIGALRM"CDEFAULT"\n", __FILE__);
-        printf(CRED"TEMPO FINITO"CDEFAULT"\n");*/
-    }
-    if(sig == SIGTERM){
-        /*printf("%s Ricevuto SIGTERM\n", __FILE__);*/
-        t = 0;
-    }
-
-    if(sig == SIGUSR1){
-        
-        wait(NULL);
-        if(t){
-            /*printf(CGREEN"ricevuto SIGUSR1."CDEFAULT" figlio terminato %d\n", wait(NULL));*/
-            switch(fork()){
-                case -1:
-                    ERROR_EXIT
-                case 0:
-                    if(execl("taxi/taxi", "taxi", (char*) NULL) == -1){
-                        ERROR_EXIT
-                    }
-                default:
-                    d++;
-                    /*printf(CYELLOW"Creazione avvenuta"CDEFAULT"\n");*/
-            }
-        }
-    }
-}
-
-
 
 int main(int argc, char **argv){
 
@@ -85,17 +49,17 @@ int main(int argc, char **argv){
     
     
     /* Creazione SHM */
-    if((shm_map = shmget(SHMKEY_MAP, sizeof(map), IPC_CREAT | 0666)) == -1){
+    if((shm_map = shmget(SHMKEY_MAP, sizeof(map), IPC_CREAT | 0644)) == -1){
         ERROR_EXIT
     }
-    if((shm_par = shmget(SHMKEY_PAR, sizeof(struct parameters), IPC_CREAT | 0666)) == -1){
+    if((shm_par = shmget(SHMKEY_PAR, sizeof(struct parameters), IPC_CREAT | 0644)) == -1){
         ERROR_EXIT
     }
-    if((shm_stat = shmget(SHMKEY_STAT, sizeof(struct statistic), IPC_CREAT | 0666)) == -1){
+    if((shm_stat = shmget(SHMKEY_STAT, sizeof(struct statistic), IPC_CREAT | 0644)) == -1){
         ERROR_EXIT
     }
 
-    /* attach della shm */
+    /* attach delle shm */
     if((city_map = (map *) shmat(shm_map, NULL, 0)) == (void *) -1){
         ERROR_EXIT
     }
@@ -111,7 +75,6 @@ int main(int argc, char **argv){
         ERROR_EXIT
     }
     
-
     /* crea la coda di messaggi per le richieste dei taxi */
     if((qid = msgget(MSGKEY, IPC_CREAT | 0666)) == -1){
         ERROR_EXIT
@@ -154,6 +117,7 @@ int main(int argc, char **argv){
     }
     free(arg.array);
 
+    /* inizializza le statistiche */
     init_stat(stat);   
     
     /* creazione dei processi source */
@@ -174,7 +138,7 @@ int main(int argc, char **argv){
         case -1:
             ERROR_EXIT
         case 0:
-            /* ogni 5 secondi stampa lo stato delle celle */
+            /* ogni 5 secondi stampa lo stato di occupazione delle celle */
             sops[0].sem_num = SEM_START;
             sops[0].sem_op = -1;
             sops[0].sem_flg = 0;
@@ -221,7 +185,6 @@ int main(int argc, char **argv){
     
     sigaction(SIGUSR1, &sa, NULL);
     
-
     /* creazione dei processi taxi */
     for(i = 0; i < param->so_taxi; i++){
         switch(fork()){
@@ -234,10 +197,6 @@ int main(int argc, char **argv){
                 }
         }
     }
-
-    
-
-    printf(CGREEN"MASTER %ld provvedo a sbloccare tutto"CDEFAULT"\n", (long)getpid());
     
     printf(CYELLOW"\t\tWelcome to TaxiCab Game.\n"CDEFAULT);
     printf("Press "CYELLOW"Ctrl^C"CDEFAULT" for let all source make new request\n");
@@ -249,6 +208,7 @@ int main(int argc, char **argv){
         printf("\r");
     }
     printf(CGREEN"\tStarted"CDEFAULT"\n\n");
+
     /* la simulazione parte dopo che sia taxi sia source sono stati creati e inizializzati */
     /* aspetta che il semaforo master diventi 0, lo incrementa per far partire la simulazione e incrementa il semaforo TAXI */
     
@@ -280,40 +240,24 @@ int main(int argc, char **argv){
     
     kill(0, SIGTERM);
     
-    
     /* terminazione */
     for(i = 0; i < param->so_source + param->so_taxi + 1; i++){
         sigprocmask(SIG_BLOCK, &my_mask, NULL);
-        /*printf("terminato %d\n",waitpid(0, &status, 0));*/
-        /*waitpid(0, &status, WNOHANG);*/
-        wait(&status);
+        wait(NULL);
         sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
     }
 
     /* stampa la mappa evidenziando HOLE, SOURCE e TOP_CELLS*/
     printf("\n");
     print_map(city_map, param->so_top_cells);
-    
-    
-   /* printf("processi terminati i %d\n", i);
-    printf("numero richieste %d\n", stat->n_request);*/
 
-    /* stampa statistiche */
-
-    /*printf("master semmaster %d\n", semctl(semid, SEM_MASTER, GETVAL));
-    printf("master semsource %d\n", semctl(semid, SEM_SOURCE, GETVAL));
-    printf("master semtaxi %d\n", semctl(semid, SEM_TAXI, GETVAL));
-    printf("D vale %d\n", d);*/
+    /* stampa statistiche */   
+    printf("\n\nTotal request: [%d] Success: ["CGREEN"%d"CDEFAULT"] Aborted:["CRED"%d"CDEFAULT"] Outstanding: ["CYELLOW"%d"CDEFAULT"]\n", \
+        stat->n_request, stat->success_req, stat->aborted_req, stat->outstanding_req + (stat->n_request-stat->aborted_req-stat->success_req));
     
-    
-    
-    /*print_status_cells(city_map);*/
-    
-
-    printf("richieste %d eseguite %d abortite %d inevase %d\n", stat->n_request, stat->success_req, stat->aborted_req, stat->n_request-stat->aborted_req-stat->success_req);
-    printf("taxi che ha fatto più celle di tutti %ld numero di celle %d\n",stat->pid_hcells_taxi, stat->high_ncells_crossed);
-    printf("taxi che ha impiegato più tempo per eseguire una richiesta %ld tempo impiegato %ld secondi\n", stat->pid_htime_taxi, stat->high_time);
-    printf("taxi che ha raccolto più richieste di tutti %ld numero richieste %d\n", stat->pid_hreq_taxi, stat->n_high_req);
+    printf("Taxi that cross more cell [%ld], number of cell crossed [%d]\n",stat->pid_hcells_taxi, stat->high_ncells_crossed);
+    printf("Taxi that has took most time to complete a request: [%ld], time: %ld seconds\n", stat->pid_htime_taxi, stat->high_time);
+    printf("Taxi that has collect more requests: [%ld], number of requests collected: [%d]\n", stat->pid_hreq_taxi, stat->n_high_req);
 
     /* rimuove la coda di messaggi */
     if(msgctl(qid, IPC_RMID, NULL)){
@@ -347,4 +291,28 @@ int main(int argc, char **argv){
 
     exit(EXIT_SUCCESS);
 
+}
+
+void master_handler(int sig){
+    if(sig == SIGALRM){ /* scaduto il tempo della simulazione */
+        kill(0, SIGTERM); 
+    }
+
+    if(sig == SIGTERM){
+        t = 0;
+    }
+
+    if(sig == SIGUSR1){ /* un taxi è terminato */
+        wait(NULL);
+        if(t){
+            switch(fork()){
+                case -1:
+                    ERROR_EXIT
+                case 0:
+                    if(execl("taxi/taxi", "taxi", (char*) NULL) == -1){
+                        ERROR_EXIT
+                    }
+            }
+        }
+    }
 }

@@ -43,7 +43,6 @@ int mv_dw(map* city_map, taxi_t *taxi, int curr_pos);
 /* sposta il taxi nella cella sopra, ritorna la nuova posizione altrimenti la stessa */
 int mv_up(map* city_map, taxi_t *taxi, int curr_pos);
 
-
 /* fa evitare al taxi la cella hole inferiore, ritorna la posizione */
 int skip_bot_hole(map *city_map, taxi_t *taxi);
 
@@ -58,5 +57,8 @@ int skip_sx_hole(map *city_map, taxi_t *taxi);
 
 /* genera un numero random in un range [a,b] con a < b */
 int get_random(int a, int b);
+
+/* handler dei segnali taxi */
+void taxi_handler(int sig);
 
 #endif

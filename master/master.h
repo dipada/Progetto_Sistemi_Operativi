@@ -67,17 +67,24 @@ struct request_queue{
     int dest_cell;   /* cella di arrivo */
 };
 
-
 enum semaphores{SEM_MASTER, SEM_SOURCE, SEM_TAXI, SEM_START, SEM_ST};
-
-
-/* stampa la mappa evidenzianziando hole, sources e top_cells */
-void print_map(map *city_map, int n_top_cells);
 
 /* inizializza la struttura delle statistiche */
 void init_stat(struct statistic *stat);
 
 /* stampa in percentuale lo stato di occupazione delle varie celle */
 void print_status_cells(map *city_map);
+
+/* stampa la mappa evidenzianziando hole, sources e top_cells */
+void print_map(map *city_map, int n_top_cells);
+
+/* ordina per numero di transizioni il vettore passato */
+void sort_vector_transition(int* vet, int length, map* city_map);
+
+/* verifica se la cella è una top cell */
+int is_top_cell(int pos, const int* vet, int length);
+
+/* handler di segnali master */
+void master_handler(int sig);
 
 #endif

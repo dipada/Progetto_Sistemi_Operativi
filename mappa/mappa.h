@@ -12,8 +12,8 @@
 #define BUFSIZE 128
 
 /* parametri definiti a tempo di compilazione */
-#define SO_WIDTH 3
-#define SO_HEIGHT 3
+#define SO_WIDTH 20
+#define SO_HEIGHT 10
 
 /* path file di configurazione*/
 #define CONF_FILE ("file_configurazione/conf.txt")

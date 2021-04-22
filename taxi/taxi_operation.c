@@ -26,7 +26,6 @@ void place_taxi(map *city_map, taxi_t *taxi){
     }
 }
 
-
 /* preleva una richiesta dalla coda di messaggi */
 int take_request(map* city_map, int qid, taxi_t* taxi, struct request_queue* queue){
     return msgrcv(qid, queue, (sizeof(struct request_queue) - sizeof(long)), taxi->pid_cell_taxi, IPC_NOWAIT);
@@ -191,9 +190,7 @@ int skip_sx_hole(map *city_map, taxi_t *taxi){
     return curr_pos;
 }
 
-
-
-/* sposta il taxi nella cella alla sua destra se non è hole e c'è spazio1, ritorna la nuova posizione altrimenti la stessa */
+/* sposta il taxi nella cella alla sua destra se non è hole e c'è spazio, ritorna la nuova posizione altrimenti la stessa */
 int mv_dx(map* city_map, taxi_t *taxi, int curr_pos){
     int new_pos = curr_pos + 1;
     
@@ -205,7 +202,6 @@ int mv_dx(map* city_map, taxi_t *taxi, int curr_pos){
         taxi->pid_cell_taxi = city_map->m_cell[new_pos].pid_source;
         taxi->where_taxi = new_pos;
         taxi->traveled_cell += 1;
-    /*printf("Il taxi %ld è andato a dx da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);*/
 
         return new_pos;
     }
@@ -224,7 +220,7 @@ int mv_sx(map* city_map, taxi_t *taxi, int curr_pos){
         taxi->pid_cell_taxi = city_map->m_cell[new_pos].pid_source;
         taxi->where_taxi = new_pos;
         taxi->traveled_cell += 1;
-    /*printf("Il taxi %ld è andato a sx da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);*/
+    
         return new_pos;
     }
     return curr_pos;    
@@ -242,7 +238,7 @@ int mv_dw(map* city_map, taxi_t *taxi, int curr_pos){
         taxi->pid_cell_taxi = city_map->m_cell[new_pos].pid_source;
         taxi->where_taxi = new_pos;
         taxi->traveled_cell += 1;
-    /*printf("Il taxi %ld è andato giu da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);*/
+
         return new_pos;
     }
     return curr_pos;
@@ -260,7 +256,7 @@ int mv_up(map* city_map, taxi_t *taxi, int curr_pos){
         taxi->pid_cell_taxi = city_map->m_cell[new_pos].pid_source;
         taxi->where_taxi = new_pos;
         taxi->traveled_cell += 1;
-    /*printf("Il taxi %ld è andato a su da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);*/
+    
         return new_pos;
     }
     return curr_pos;
