@@ -24,8 +24,8 @@ void master_handler(int sig){
         
         kill(0, SIGTERM); 
         
-        printf(CRED"%s ricevuto SIGALRM"CDEFAULT"\n", __FILE__);
-        printf(CRED"TEMPO FINITO"CDEFAULT"\n");
+       /* printf(CRED"%s ricevuto SIGALRM"CDEFAULT"\n", __FILE__);
+        printf(CRED"TEMPO FINITO"CDEFAULT"\n");*/
     }
     if(sig == SIGTERM){
         /*printf("%s Ricevuto SIGTERM\n", __FILE__);*/
@@ -35,8 +35,8 @@ void master_handler(int sig){
     if(sig == SIGUSR1){
         
         wait(NULL);
-        
-            printf(CGREEN"ricevuto SIGUSR1."CDEFAULT" figlio terminato %d\n", wait(NULL));
+        if(t){
+            /*printf(CGREEN"ricevuto SIGUSR1."CDEFAULT" figlio terminato %d\n", wait(NULL));*/
             switch(fork()){
                 case -1:
                     ERROR_EXIT
@@ -46,9 +46,9 @@ void master_handler(int sig){
                     }
                 default:
                     d++;
-                    printf(CYELLOW"Creazione avvenuta"CDEFAULT"\n");
+                    /*printf(CYELLOW"Creazione avvenuta"CDEFAULT"\n");*/
             }
-        
+        }
     }
 }
 
@@ -64,13 +64,8 @@ int main(int argc, char **argv){
 
     struct timespec trstat, trestat;
 
-    time_t rawtime;
-  struct tm * timeinfo;
-
-
     union semun arg;
     
-
     struct sigaction sa, sia;
     sigset_t my_mask;
 
@@ -112,7 +107,7 @@ int main(int argc, char **argv){
     }
     
     /* Creazione dei semafori */
-    if((semid = semget(SEMKEY, 4, IPC_CREAT | 0666)) == -1){
+    if((semid = semget(SEMKEY, 5, IPC_CREAT | 0666)) == -1){
         ERROR_EXIT
     }
     
@@ -136,20 +131,24 @@ int main(int argc, char **argv){
         default: /* ----- codice del padre ----- */
             /* attende la terminazione e analizza lo status di uscita */
             wait(&status);
-            if(check_status(status)){
-                fprintf(stderr,"[%s]: Exiting due to error map...\n", __FILE__);
-                exit(EXIT_FAILURE);
-            }       
+            if(WIFEXITED(status)){
+                if(WEXITSTATUS(status)){ /* analizza lo status di uscita */
+                    fprintf(stderr,"[%s]: Exiting due to error map...\n", __FILE__);
+                    exit(EXIT_FAILURE);
+                }  
+            }
     }
 
     /* inizializzazione semafori*/
-    if((arg.array = (unsigned short *)malloc(sizeof(unsigned short)*4)) == NULL ){
+    if((arg.array = (unsigned short *)malloc(sizeof(unsigned short)*5)) == NULL ){
         ERROR_EXIT
     }
     arg.array[SEM_MASTER] = 1;
     arg.array[SEM_SOURCE] = param->so_source;
     arg.array[SEM_TAXI] = param->so_taxi;
     arg.array[SEM_START] = 0;
+    arg.array[SEM_ST] = 0;
+
     if(semctl(semid, 0, SETALL, arg.array) == -1){
         ERROR_EXIT
     }
@@ -189,15 +188,10 @@ int main(int argc, char **argv){
             trestat.tv_sec = 0;
 
             while(t){
-                print_status_cells(city_map);
+                /*print_status_cells(city_map);*/
 
                 sigprocmask(SIG_BLOCK, &my_mask, NULL);
-                if(nanosleep(&trstat, &trestat) == -1){
-                    ERROR_EXIT
-                }
-                sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
-
-                sigprocmask(SIG_BLOCK, &my_mask, NULL);
+                
                 sops[0].sem_num = SEM_MASTER;
                 sops[0].sem_op = -1;
                 sops[0].sem_flg = 0;
@@ -208,14 +202,15 @@ int main(int argc, char **argv){
 
                 /* ogni 5 secondi stampa lo stato di occupazione delle celle */
                 print_status_cells(city_map);
-                 time ( &rawtime );
-            timeinfo = localtime ( &rawtime );
-                 printf ( "Current local time and date: %s", asctime (timeinfo) );
 
                 sops[0].sem_num = SEM_MASTER;
                 sops[0].sem_op = 1;
                 sops[0].sem_flg = 0;
                 if(semop(semid, sops, 1) == -1){
+                    ERROR_EXIT
+                }
+
+                if(nanosleep(&trstat, &trestat) == -1){
                     ERROR_EXIT
                 }
                 sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
@@ -240,10 +235,20 @@ int main(int argc, char **argv){
         }
     }
 
+    
+
     printf(CGREEN"MASTER %ld provvedo a sbloccare tutto"CDEFAULT"\n", (long)getpid());
     
-    /*print_map(city_map);*/
-
+    printf(CYELLOW"\t\tWelcome to TaxiCab Game.\n"CDEFAULT);
+    printf("Press "CYELLOW"Ctrl^C"CDEFAULT" for let all source make new request\n");
+    printf("Game will start in:\n");
+    for(i = 5; i > 0; i--){
+        printf("\t%d", i);
+        fflush(stdout);
+        sleep(1);
+        printf("\r");
+    }
+    printf(CGREEN"\tStarted"CDEFAULT"\n\n");
     /* la simulazione parte dopo che sia taxi sia source sono stati creati e inizializzati */
     /* aspetta che il semaforo master diventi 0, lo incrementa per far partire la simulazione e incrementa il semaforo TAXI */
     
@@ -255,78 +260,61 @@ int main(int argc, char **argv){
     sops[1].sem_op = 0;                 /* tutti i processi taxi si sono posizionati */
     sops[1].sem_flg = 0;
 
-    /*sops[2].sem_num = SEM_SOURCE;
-    sops[2].sem_op = param->so_source;
-    sops[2].sem_flg = 0;
-
-    sops[3].sem_num = SEM_TAXI;
-    sops[3].sem_op = param->so_taxi;
-    sops[3].sem_flg = 0;*/
-
     sops[2].sem_num = SEM_START;
     sops[2].sem_op = param->so_taxi + param->so_source + 1;
     sops[2].sem_flg = 0;
-    if(semop(semid, sops, 3) == -1){
-        ERROR_EXIT
-    }
-    printf(CRED"tutti processi pronti"CDEFAULT"\n");
     
-    /*sops[0].sem_num = SEM_START;
-    sops[0].sem_op = param->so_source;
-    sops[0].sem_flg = 0;
-    if(semop(semid, sops, 1) == -1){
+    sops[3].sem_num = SEM_ST;
+    sops[3].sem_op = 1;
+    sops[3].sem_flg = 0;
+
+    if(semop(semid, sops, 4) == -1){
         ERROR_EXIT
     }
-*/
+    
     sigaction(SIGTERM, &sa, NULL);
-    printf(CGREEN"setto alarm a %d"CDEFAULT"\n", param->so_duration);
 
-    alarm(param->so_duration);
-
-    
+    alarm(param->so_duration);    
 
     while(t);
-    printf("ORA PROCEDO\n");
-    printf("ignoro i segnali ora\n");
-    sigaction(SIGUSR1, &sia, NULL);
     
-    printf("invio sigterm a tutti\n");
     kill(0, SIGTERM);
     
     
-    /*printf("Richieste totali generate: %d\n", stat->n_request);*/
-    
-
-    printf("sosource %d sotaxi %d d %d\n", param->so_source, param->so_taxi, d);
-    /* stampa la mappa evidenziando HOLE, SOURCE e TOP_CELLS*/
-    for(i = 0; i < param->so_source + param->so_taxi + d + 1; i++){
+    /* terminazione */
+    for(i = 0; i < param->so_source + param->so_taxi + 1; i++){
         sigprocmask(SIG_BLOCK, &my_mask, NULL);
-        printf("terminato %d\n",waitpid(0, &status, 0));
+        /*printf("terminato %d\n",waitpid(0, &status, 0));*/
         /*waitpid(0, &status, WNOHANG);*/
-        /*wait(&status);*/
+        wait(&status);
         sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
     }
-    printf("processi terminati i %d\n", i);
-    printf("numero richieste %d\n", stat->n_request);
-    print_map(city_map);
 
-    printf("master semmaster %d\n", semctl(semid, SEM_MASTER, GETVAL));
+    /* stampa la mappa evidenziando HOLE, SOURCE e TOP_CELLS*/
+    printf("\n");
+    print_map(city_map, param->so_top_cells);
+    
+    
+   /* printf("processi terminati i %d\n", i);
+    printf("numero richieste %d\n", stat->n_request);*/
+
+    /* stampa statistiche */
+
+    /*printf("master semmaster %d\n", semctl(semid, SEM_MASTER, GETVAL));
     printf("master semsource %d\n", semctl(semid, SEM_SOURCE, GETVAL));
     printf("master semtaxi %d\n", semctl(semid, SEM_TAXI, GETVAL));
-    printf("D vale %d\n", d);
-    /*for(;;){
-        print_status_cells(city_map);
-        sleep(1);
-    }*/
+    printf("D vale %d\n", d);*/
+    
     
     
     /*print_status_cells(city_map);*/
     
-    time ( &rawtime );
-    timeinfo = localtime ( &rawtime );
-         printf ( "Current local time and date: %s", asctime (timeinfo) );
 
-    printf("richieste %d eseguite %d abortite %d inevase %d\n", stat->n_request, stat->success_req, stat->aborted_req, stat->outstanding_req);
+    printf("richieste %d eseguite %d abortite %d inevase %d\n", stat->n_request, stat->success_req, stat->aborted_req, stat->n_request-stat->aborted_req-stat->success_req);
+    printf("taxi che ha fatto più celle di tutti %ld numero di celle %d\n",stat->pid_hcells_taxi, stat->high_ncells_crossed);
+    printf("taxi che ha impiegato più tempo per eseguire una richiesta %ld tempo impiegato %ld secondi\n", stat->pid_htime_taxi, stat->high_time);
+    printf("taxi che ha raccolto più richieste di tutti %ld numero richieste %d\n", stat->pid_hreq_taxi, stat->n_high_req);
+
     /* rimuove la coda di messaggi */
     if(msgctl(qid, IPC_RMID, NULL)){
         ERROR_EXIT

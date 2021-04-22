@@ -13,16 +13,19 @@ typedef struct{
     long pid_cell_taxi; /* il pid della cella in cui si trova il taxi */
     long time_request;  /* il tempo più lungo di tutti impiegato dal taxi per servire una richiesta*/
     int traveled_cell;  /* numero di celle attraversate (somma di tutti i viaggi) */
+    int nreq;           /* numero di richieste raccolte dal taxi */
 }taxi_t;
 
 
-/* posiziona il TAXI casualmente sulla mappa */
+/* posiziona il taxi casualmente sulla mappa */
 void place_taxi(map *city_map, taxi_t *taxi);
+
 /* preleva una richiesta dalla coda di messaggi */
 int take_request(map* city_map, int qid, taxi_t* taxi, struct request_queue* queue);
 
 /* ----- MOVIMENTO TAXI ----- */
 
+/* sposta il taxi di una cella verso la cella di destinazione */
 void go_cell(map* city_map, taxi_t *taxi, int goal_pos);
 
 /* in base alla posizione del taxi cerca una cella source e ritorna la posizione */
@@ -41,29 +44,19 @@ int mv_dw(map* city_map, taxi_t *taxi, int curr_pos);
 int mv_up(map* city_map, taxi_t *taxi, int curr_pos);
 
 
-
+/* fa evitare al taxi la cella hole inferiore, ritorna la posizione */
 int skip_bot_hole(map *city_map, taxi_t *taxi);
+
+/* fa evitare al taxi la cella hole superiore, ritorna la posizione */
 int skip_top_hole(map *city_map, taxi_t *taxi);
+
+/* fa evitare al taxi la cella hole destra, ritorna la posizione */
 int skip_dx_hole(map *city_map, taxi_t *taxi);
+
+/* fa evitare al taxi la cella hole sinistra, ritorna la posizione */
 int skip_sx_hole(map *city_map, taxi_t *taxi);
-
-
-
-
 
 /* genera un numero random in un range [a,b] con a < b */
 int get_random(int a, int b);
-
-/* inizializza il semaforo a 1 */
-int initSemAvailable(int semId, int semNum);
-
-/* inizializza il semaforo a 0*/
-int initSemInUse(int semId, int semNum);
-
-/* decrementa il semaforo di 1 */
-int reserveSem(int semId, int semNum);
-
-/* incrementa il semaforo di 1 */
-int releaseSem(int semId, int semNum);
 
 #endif

@@ -20,6 +20,7 @@ void place_taxi(map *city_map, taxi_t *taxi){
             taxi->pid_cell_taxi = city_map->m_cell[rand_position].pid_source; /* -1 se la cella non è source */
             taxi->traveled_cell = 0;
             taxi->time_request = -1;
+            taxi->nreq = 0;
             i--;
         }
     }
@@ -85,40 +86,64 @@ void go_cell(map* city_map, taxi_t *taxi, int goal_pos){
     if(goal_pos > curr_pos){
         
         if(goal_pos >= curr_pos + SO_WIDTH){
-            
+
+            if(city_map->m_cell[curr_pos+SO_WIDTH].is_hole){
+                skip_bot_hole(city_map, taxi);
+            }else{
             /* va alla cella inferiore se la cella dista più di SO_WIDTH posizioni e non è un HOLE */
-            curr_pos = mv_dw(city_map, taxi, curr_pos);
+                curr_pos = mv_dw(city_map, taxi, curr_pos);
+            }
 
         }else{
-            
+
             if((goal_pos%SO_WIDTH) < (curr_pos%SO_WIDTH)){ /* siamo nella riga superiore in celle con resto maggiore di quella di arrivo */
-            
-                curr_pos = mv_sx(city_map, taxi, curr_pos);
+                if(city_map->m_cell[curr_pos-1].is_hole){
+                    skip_sx_hole(city_map, taxi);
+                }else{
+                    curr_pos = mv_sx(city_map, taxi, curr_pos);
+                }
             }else{
-                
+                if(city_map->m_cell[curr_pos+1].is_hole){
+                    skip_dx_hole(city_map, taxi);
+                }else{
                 /* la cella è a sinistra delle cella di arrivo */
-                curr_pos = mv_dx(city_map, taxi, curr_pos);
+                    curr_pos = mv_dx(city_map, taxi, curr_pos);
+                }
             }
+        
         }
     }
     if(goal_pos < curr_pos){
         
         if(goal_pos <= curr_pos - SO_WIDTH){
 
+            if(city_map->m_cell[curr_pos - SO_WIDTH].is_hole){
+                skip_top_hole(city_map, taxi);
+            }else{
             /* va alla cella superiore se la cella dista più di SO_WIDTH posizioni */
                 curr_pos = mv_up(city_map, taxi, curr_pos);
+            }
+        
         }else{
+
             if(goal_pos%SO_WIDTH > curr_pos%SO_WIDTH){
-                curr_pos = mv_dx(city_map, taxi, curr_pos);
+                if(city_map->m_cell[curr_pos+1].is_hole){
+                    skip_dx_hole(city_map, taxi);
+                }else{
+                    curr_pos = mv_dx(city_map, taxi, curr_pos);
+                }
+
             }else{
-                curr_pos = mv_sx(city_map, taxi, curr_pos);
+
+                if(city_map->m_cell[curr_pos - 1].is_hole){
+                    skip_sx_hole(city_map, taxi);
+                }else{
+                    curr_pos = mv_sx(city_map, taxi, curr_pos);
+                }
+            
             }
         }
-    }
-    
-
-    /*taxi->where_taxi = curr_pos;*/
-    
+    }    
 }
 
 
@@ -147,22 +172,22 @@ int skip_top_hole(map *city_map, taxi_t *taxi){
 /* evita la cella HOLE destra */
 int skip_dx_hole(map *city_map, taxi_t *taxi){
     int curr_pos = taxi->where_taxi;
-    if((curr_pos%SO_WIDTH) == SO_WIDTH - 1){ /* celle laterali destra */
-        curr_pos = mv_sx(city_map, taxi, curr_pos);
+    if(curr_pos >= 0 || curr_pos <= SO_WIDTH - 1){ /* celle superiori */
+        curr_pos = mv_dw(city_map, taxi, curr_pos);
     }else{
-        curr_pos = mv_dx(city_map, taxi, curr_pos);
+        curr_pos = mv_up(city_map, taxi, curr_pos);
     }
     return curr_pos;
 }
+
 /* evita la cella HOLE sinistra */
 int skip_sx_hole(map *city_map, taxi_t *taxi){
     int curr_pos = taxi->where_taxi;
-    if((curr_pos%SO_WIDTH) == SO_WIDTH - 1){ /* celle laterali destra */
-        curr_pos = mv_sx(city_map, taxi, curr_pos);
+    if(curr_pos >= 0 || curr_pos <= SO_WIDTH - 1){ /* celle superiori */
+        curr_pos = mv_dw(city_map, taxi, curr_pos);
     }else{
-        curr_pos = mv_dx(city_map, taxi, curr_pos);
+        curr_pos = mv_up(city_map, taxi, curr_pos);
     }
-    
     return curr_pos;
 }
 
@@ -179,7 +204,7 @@ int mv_dx(map* city_map, taxi_t *taxi, int curr_pos){
         city_map->m_cell[new_pos].transitions += 1;
         taxi->pid_cell_taxi = city_map->m_cell[new_pos].pid_source;
         taxi->where_taxi = new_pos;
-    
+        taxi->traveled_cell += 1;
     /*printf("Il taxi %ld è andato a dx da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);*/
 
         return new_pos;
@@ -198,7 +223,7 @@ int mv_sx(map* city_map, taxi_t *taxi, int curr_pos){
         city_map->m_cell[new_pos].transitions += 1;
         taxi->pid_cell_taxi = city_map->m_cell[new_pos].pid_source;
         taxi->where_taxi = new_pos;
-    
+        taxi->traveled_cell += 1;
     /*printf("Il taxi %ld è andato a sx da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);*/
         return new_pos;
     }
@@ -216,7 +241,7 @@ int mv_dw(map* city_map, taxi_t *taxi, int curr_pos){
         city_map->m_cell[new_pos].transitions += 1;
         taxi->pid_cell_taxi = city_map->m_cell[new_pos].pid_source;
         taxi->where_taxi = new_pos;
-    
+        taxi->traveled_cell += 1;
     /*printf("Il taxi %ld è andato giu da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);*/
         return new_pos;
     }
@@ -234,48 +259,9 @@ int mv_up(map* city_map, taxi_t *taxi, int curr_pos){
         city_map->m_cell[new_pos].transitions += 1;
         taxi->pid_cell_taxi = city_map->m_cell[new_pos].pid_source;
         taxi->where_taxi = new_pos;
-    
+        taxi->traveled_cell += 1;
     /*printf("Il taxi %ld è andato a su da %d ora è in %d\n",(long)getpid(), curr_pos, new_pos);*/
         return new_pos;
     }
     return curr_pos;
 }
-
-
-/* inizializza il semaforo a 1
-int initSemAvailable(int semid, int semNum){
-    union semun arg;
-
-    arg.val = 1;
-    return semctl(semid, semNum, SETVAL, arg);
-}*/
-
-/* inizializza il semaforo a 0 
-int initSemInUse(int semid, int semNum){
-    union semun arg;
-
-    arg.val = 0;
-    return semctl(semid, semNum, SETVAL, arg);
-}*/
-
-/* decrementa il semaforo di 1 
-int reserveSem(int semid, int semnum){
-    struct sembuf sops;
-
-    sops.sem_num = semnum;
-    sops.sem_op = -1;
-    sops.sem_flg = 0;
-
-    return semop(semid, &sops, 1);
-}*/
-
-/* incrementa il semaforo di 1 
-int reserveSem(int semid, int semnum){
-    struct sembuf sops;
-
-    sops.sem_num = semnum;
-    sops.sem_op = 1;
-    sops.sem_flg = 0;
-
-    return semop(semid, &sops, 1);
-}*/

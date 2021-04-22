@@ -20,25 +20,26 @@ void taxi_handler(int sig){
 
     if(sig == SIGALRM){    /* il taxi non si muove seppur riesce ad accedere al SEM_MASTER */
         
-        printf("taxi %ld "CYELLOW"uscita alarm"CDEFAULT"\n", (long)getpid());
+        /*printf("taxi %ld "CYELLOW"uscita alarm"CDEFAULT" taxi %d \n", (long)getpid(), city_map->m_cell[taxi.where_taxi].n_taxi_here);*/
         if(t){
+            
+            sops[0].sem_num = SEM_START;
+            sops[0].sem_op = 1;
+            sops[0].sem_flg = 0;
+
+            sops[1].sem_num = SEM_TAXI;
+            sops[1].sem_op = 1;
+            sops[1].sem_flg = 0;
+
+            if(semop(semid, sops, 2) == -1){
+                ERROR_EXIT
+            }
+
+            if(kill(getppid(), SIGUSR1) == -1){
+                ERROR_EXIT
+            }
+        }
         city_map->m_cell[taxi.where_taxi].n_taxi_here -= 1;
-        sops[0].sem_num = SEM_START;
-        sops[0].sem_op = 1;
-        sops[0].sem_flg = 0;
-
-        sops[1].sem_num = SEM_TAXI;
-        sops[1].sem_op = 1;
-        sops[1].sem_flg = 0;
-
-        if(semop(semid, sops, 2) == -1){
-            ERROR_EXIT
-        }
-
-        if(kill(getppid(), SIGUSR1) == -1){
-            ERROR_EXIT
-        }
-        }
         exit(EXIT_FAILURE);
         
     }
@@ -57,10 +58,12 @@ int main(int argc, char** argv){
     struct sigaction sa;
     sigset_t my_mask;
 
+    time_t start_time, end_time;
+
     sa.sa_handler = &taxi_handler;
     sa.sa_flags = 0;
     sigfillset(&my_mask);
-    sigdelset(&my_mask, SIGALRM);
+    
     sa.sa_mask = my_mask;
     sigaction(SIGTERM, &sa, NULL);
     
@@ -87,7 +90,7 @@ int main(int argc, char** argv){
     }
 
     /* ID semafori */
-    if((semid = semget(SEMKEY, 3, 0)) == -1){
+    if((semid = semget(SEMKEY, 5, 0)) == -1){
         ERROR_EXIT
     }
 
@@ -100,6 +103,7 @@ int main(int argc, char** argv){
     sigaction(SIGALRM, &sa, NULL);
     /*printf("taxi %ld semmaster vale %d\n", (long)getpid(), semctl(semid, SEM_MASTER, GETVAL));*/
 
+    sigprocmask(SIG_BLOCK, &my_mask, NULL);
     sops[0].sem_num = SEM_MASTER;
     sops[0].sem_op = -1;
     sops[0].sem_flg = 0;
@@ -119,6 +123,7 @@ int main(int argc, char** argv){
     if(semop(semid, sops, 2) == -1){
         ERROR_EXIT
     }
+    sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
     /*printf("taxi %ld posizione %d\n", (long)getpid(), taxi.where_taxi);*/
 
     /* in attesa dell'autorizzazione dal processo master */
@@ -134,15 +139,16 @@ int main(int argc, char** argv){
     tsop.tv_nsec = 0;
 
     while(t){
-        /* TODO verificare se è in una cella source */
         
+        /* se non è in una source ci va */
         if(!city_map->m_cell[taxi.where_taxi].is_source){
             src_pos = search_source(city_map, taxi.where_taxi);
             
-            printf("taxi %ld source localizzata a %d\n", (long)getpid(), src_pos);
+            /*printf("taxi %ld source localizzata a %d\n", (long)getpid(), src_pos);*/
             alr_pos = taxi.where_taxi;
+            alarm(param->so_timeout);
             while(taxi.where_taxi != src_pos && t){
-                alarm(param->so_timeout);
+                
 
                 sigprocmask(SIG_BLOCK, &my_mask, NULL);
                 sops[0].sem_num = SEM_MASTER;
@@ -165,7 +171,7 @@ int main(int argc, char** argv){
                             kill(getppid(), SIGUSR1);                            
                         }
                         city_map->m_cell[taxi.where_taxi].n_taxi_here -= 1;
-                        printf("taxi %ld uscita "CGREEN"SEMTIMEDOP NORMALE"CDEFAULT"\n", (long)getpid());
+                        /*printf("taxi %ld uscita "CGREEN"SEMTIMEDOP NORMALE"CDEFAULT"\n", (long)getpid());*/
                         exit(EXIT_FAILURE);
                     }
                 }
@@ -174,7 +180,7 @@ int main(int argc, char** argv){
                 go_cell(city_map, &taxi, src_pos);
                 /* il taxi si è mosso annullo l'alarm */
                 if(alr_pos != taxi.where_taxi){ 
-                    alarm(0);
+                    alarm(param->so_timeout);
                     alr_pos = taxi.where_taxi;
                 }
                 
@@ -193,7 +199,8 @@ int main(int argc, char** argv){
                 
                 sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
             }
-           printf("taxi %ld arrivato alla source %d\n", (long)getpid(), taxi.where_taxi);
+            alarm(0);
+           /*printf("taxi %ld arrivato alla source %d\n", (long)getpid(), taxi.where_taxi);*/
         }
 
         /* preleva una richiesta dalla coda di messaggi */
@@ -202,12 +209,38 @@ int main(int argc, char** argv){
                 exit(EXIT_FAILURE);
             }
         }else{
-            printf("taxiwhere %d queue dest %d\n", taxi.where_taxi, queue.dest_cell);
+            /*printf("taxiwhere %d queue dest %d\n", taxi.where_taxi, queue.dest_cell);*/
+            taxi.nreq += 1;
+
+            sigprocmask(SIG_BLOCK, &my_mask, NULL);
+            sops[0].sem_num = SEM_ST;
+            sops[0].sem_op = -1;
+            sops[0].sem_flg = 0;
+            if(semop(semid, sops, 1) == -1){
+                ERROR_EXIT
+            }
             
+            /* aggiorno il taxi che ha raccolto più richieste di tutti */
+            if(taxi.nreq > stat->n_high_req){
+                stat->n_high_req = taxi.nreq;
+                stat->pid_hreq_taxi = (long)getpid();
+            }
+
+            sops[0].sem_num = SEM_ST;
+            sops[0].sem_op = 1;
+            sops[0].sem_flg = 0;
+            if(semop(semid, sops, 1) == -1){
+                ERROR_EXIT
+            }
+            sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
+
+
             alr_pos = taxi.where_taxi;
-            
+            alarm(param->so_timeout);
+            start_time = time(NULL);
+
             while(taxi.where_taxi != queue.dest_cell && t){
-                alarm(param->so_timeout);
+                
 
                 sigprocmask(SIG_BLOCK, &my_mask, NULL);
                 sops[0].sem_num = SEM_MASTER;
@@ -231,11 +264,26 @@ int main(int argc, char** argv){
                             }
                             kill(getppid(), SIGUSR1);                            
                         }
-                            city_map->m_cell[taxi.where_taxi].n_taxi_here -= 1;
-                            stat->aborted_req += 1;
-                            printf("taxi %ld "CRED"USCITA SEMTIMEDOP"CDEFAULT"\n",(long)getpid());
+                        city_map->m_cell[taxi.where_taxi].n_taxi_here -= 1;
                         
-                            exit(EXIT_FAILURE);
+                        sops[0].sem_num = SEM_ST;
+                        sops[0].sem_op = -1;
+                        sops[0].sem_flg = 0;
+                        if(semop(semid, sops, 1) == -1){
+                            ERROR_EXIT
+                        }
+                        
+                        stat->aborted_req += 1;
+
+                        sops[0].sem_num = SEM_ST;
+                        sops[0].sem_op = 1;
+                        sops[0].sem_flg = 0;
+                        if(semop(semid, sops, 1) == -1){
+                            ERROR_EXIT
+                        }
+                        /*printf("taxi %ld "CRED"USCITA SEMTIMEDOP"CDEFAULT"\n",(long)getpid());*/
+                    
+                        exit(EXIT_FAILURE);
                         
                     }else{
                         ERROR_EXIT
@@ -247,7 +295,7 @@ int main(int argc, char** argv){
                         /*printf("Taxi %ld sono in %d, dest %d t vale = %d\n", (long)getpid(), taxi.where_taxi, queue.dest_cell, t);*/
                         go_cell(city_map, &taxi, queue.dest_cell);
                         if(taxi.where_taxi != alr_pos){
-                            alarm(0);
+                            alarm(param->so_timeout);
                             alr_pos = taxi.where_taxi;
                         }
 
@@ -267,23 +315,33 @@ int main(int argc, char** argv){
                     if(nanosleep(&treq, &trem) == -1){
                         ERROR_EXIT
                     }                  
+                    sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
                     
                 }
-                sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
+                
             
             }
+            alarm(0);
+
             if(taxi.where_taxi == queue.dest_cell){
+                end_time = time(NULL);
+                taxi.time_request = end_time - start_time;
                 sigprocmask(SIG_BLOCK, &my_mask, NULL);
-                sops[0].sem_num = SEM_MASTER;
+                sops[0].sem_num = SEM_ST;
                 sops[0].sem_op = -1;
                 sops[0].sem_flg = 0;
                 if(semop(semid, sops, 1) == -1){
                     ERROR_EXIT
                 }
-                printf(CGREEN"taxi %ld"CDEFAULT" ha completato il viaggio. taxiwh %d destcell %d\n", (long)getpid(), taxi.where_taxi, queue.dest_cell);
+                /*printf(CGREEN"taxi %ld"CDEFAULT" ha completato il viaggio. taxiwh %d destcell %d\n", (long)getpid(), taxi.where_taxi, queue.dest_cell);*/
                 stat->success_req += 1;
-
-                sops[0].sem_num = SEM_MASTER;
+                /* aggiorno il taxi che ha impiegato più tempo per concludere una richiesta */
+                if(taxi.time_request >= stat->high_time){  
+                    stat->high_time = taxi.time_request;
+                    stat->pid_htime_taxi = (long)getpid();
+                }
+        
+                sops[0].sem_num = SEM_ST;
                 sops[0].sem_op = 1;
                 sops[0].sem_flg = 0;
                 if(semop(semid, sops, 1) == -1){
@@ -292,26 +350,48 @@ int main(int argc, char** argv){
                 sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
             }else{
                 sigprocmask(SIG_BLOCK, &my_mask, NULL);
-                sops[0].sem_num = SEM_MASTER;
+                sops[0].sem_num = SEM_ST;
                 sops[0].sem_op = -1;
                 sops[0].sem_flg = 0;
                 if(semop(semid, sops, 1) == -1){
                     ERROR_EXIT
                 }
+                
                 stat->aborted_req += 1;
-                sops[0].sem_num = SEM_MASTER;
+                
+                sops[0].sem_num = SEM_ST;
                 sops[0].sem_op = 1;
                 sops[0].sem_flg = 0;
                 if(semop(semid, sops, 1) == -1){
                     ERROR_EXIT
                 }
                 sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
-                printf(CRED"taxi %ld"CDEFAULT" non ha completato il viaggio. tempo scaduto t vale %d \n", (long)getpid(), t);
+                /*printf(CRED"taxi %ld"CDEFAULT" non ha completato il viaggio. tempo scaduto t vale %d \n", (long)getpid(), t);*/
             }
         }
     }
 
-    printf("taxi %ld uscita\n", (long)getpid());
+    sigprocmask(SIG_BLOCK, &my_mask, NULL);
+    sops[0].sem_num = SEM_ST;
+    sops[0].sem_op = -1;
+    sops[0].sem_flg = 0;
+    if(semop(semid, sops, 1) == -1){
+        ERROR_EXIT
+    }
+    
+    /* aggiorno il taxi che ha passato più celle */
+    if(taxi.traveled_cell > stat->high_ncells_crossed){
+        stat->high_ncells_crossed = taxi.traveled_cell;
+        stat->pid_hcells_taxi = (long)getpid();
+    }
+    
+    sops[0].sem_num = SEM_ST;
+    sops[0].sem_op = 1;
+    sops[0].sem_flg = 0;
+    if(semop(semid, sops, 1) == -1){
+        ERROR_EXIT
+    }
+    sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
 
     sops[0].sem_num = SEM_TAXI;
     sops[0].sem_op = 1;

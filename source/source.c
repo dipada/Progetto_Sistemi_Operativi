@@ -51,7 +51,7 @@ int main(int argc, char** argv){
     }
     
     /* ID semafori */
-    if((semid = semget(SEMKEY, 4, 0)) == -1){
+    if((semid = semget(SEMKEY, 5, 0)) == -1){
         ERROR_EXIT
     }
 
@@ -107,11 +107,11 @@ int main(int argc, char** argv){
         /* preparazione e invio della richiesta */    
         if(make_request(city_map, qid, source_pos) == -1){
             if(errno != EAGAIN){
-                ERROR_EXIT
+                exit(EXIT_FAILURE);
             }
         }else{
             sigprocmask(SIG_BLOCK, &my_mask, NULL);
-            sops[0].sem_num = SEM_MASTER;
+            sops[0].sem_num = SEM_ST;
             sops[0].sem_op = -1;
             sops[0].sem_flg = 0;
             if(semop(semid, sops, 1) == -1){
@@ -122,7 +122,7 @@ int main(int argc, char** argv){
             stat->n_request += 1;
             
 
-            sops[0].sem_num = SEM_MASTER;
+            sops[0].sem_num = SEM_ST;
             sops[0].sem_op = 1;
             sops[0].sem_flg = 0;
             if(semop(semid, sops, 1) == -1){
@@ -163,11 +163,12 @@ void source_handler(int sig){
         if(make_request(city_map, qid, source_pos) == -1){
             if(errno == EAGAIN){
                 fprintf(stdout, "\nsource [%d] >> "CRED"Can't register your request. Queue is full."CDEFAULT"\n", source_pos);
+                fflush(stdout);
             }else{
                 ERROR_EXIT
             }
         }else{
-            sops[0].sem_num = SEM_MASTER;
+            sops[0].sem_num = SEM_ST;
             sops[0].sem_op = -1;
             sops[0].sem_flg = 0;
             if(semop(semid, sops, 1) == -1){
@@ -176,8 +177,8 @@ void source_handler(int sig){
             /* registra l'avvenuta richiesta */
             stat->n_request += 1;
             fprintf(stdout, "\nsource [%d] >> "CGREEN"Request registered with success"CDEFAULT"\n", source_pos);
-
-            sops[0].sem_num = SEM_MASTER;
+            fflush(stdout);
+            sops[0].sem_num = SEM_ST;
             sops[0].sem_op = 1;
             sops[0].sem_flg = 0;
             if(semop(semid, sops, 1) == -1){

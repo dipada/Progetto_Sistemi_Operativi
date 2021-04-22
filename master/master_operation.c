@@ -15,9 +15,59 @@ void init_stat(struct statistic *stat){
 }
 
 /* stampa la mappa evidenzianziando hole, sources e top_cells */
-void print_map(map *city_map){
+void print_map(map *city_map, int n_top_cells){
     int register i,j; 
+    int temp;
+    int *tcel;
     
+    if((tcel = (int *)malloc(sizeof(int) * n_top_cells ))== NULL){
+        ERROR_EXIT
+    }
+
+    /* inizializza il vettore delle celle */
+    for(i = 0; i < n_top_cells; i++){
+        tcel[i] = i;
+    }
+
+    for(i = 0; i < n_top_cells; i++){
+        printf("pod %d val %d tans %ld\n", i, tcel[i], city_map->m_cell[tcel[i]].transitions  );
+    }
+
+    
+
+    for(i = 0; i < n_top_cells - 1; i++){
+        for(j = i + 1; j < n_top_cells; j++ ){
+            if(city_map->m_cell[tcel[i]].transitions > city_map->m_cell[tcel[j]].transitions){
+                temp = tcel[i];
+                tcel[i] = tcel[j];
+                tcel[j] = temp;
+            }
+        }
+    }
+
+    /* recupero le celle più attraversate */
+    for(i = 0; i < SO_WIDTH*SO_HEIGHT-1 ; i++){
+        printf("cella i %d ntra %ld\n", i, city_map->m_cell[i].transitions);
+        for(j = 0; j < n_top_cells; j++){
+            if(city_map->m_cell[tcel[i]].transitions > city_map->m_cell[tcel[j]].transitions){
+                tcel[i] = j;
+            }
+        }
+    }
+
+    for(i = 0; i < n_top_cells; i++){
+        printf("pod %d val %d tans %ld\n", i, tcel[i], city_map->m_cell[tcel[i]].transitions  );
+    }
+
+/*    for(i = 0; i < n_top_cells; i++){
+        printf("pos %d val %d trans %ld\n", i, tcel[i], city_map->m_cell[tcel[i]].transitions);
+    }
+*/
+    /* recupero le celle più attraversate */
+    /*for(i = 0; i < SO_WIDTH*SO_HEIGHT; i++){
+    */    
+    
+
     printf("*-");
     /* stampo la riga iniziale della mappa */
     for(i=0; i<SO_WIDTH-1; i++){ 
@@ -51,13 +101,15 @@ void print_map(map *city_map){
     }
     printf("\n");
     printf("Legend: "CRED"X"CDEFAULT" Holes "CGREEN"S"CDEFAULT" Sources "CYELLOW"*"CDEFAULT" Top_Cells\n");
+    fflush(stdout);
+    free(tcel);
 }
 
 /* stampa lo stato di occupazione delle varie celle */
 void print_status_cells(map *city_map){
     int register i, j;
     
-    printf("cells capacity status\n");
+    printf("cells capacity status percentage. F = 100%%\n");
     /* stampo la riga iniziale della mappa */
     
     printf(CRED"*"CDEFAULT"--");
@@ -85,14 +137,6 @@ void print_status_cells(map *city_map){
             printf(CRED"*"CDEFAULT"\n");
         }
     }
-    
-
+    printf("\n");
+    fflush(stdout);
 }
-
-int check_status(int status){
-    if(WIFEXITED(status)){
-        return WEXITSTATUS(status);    
-    }
-    return -1;
-}
-

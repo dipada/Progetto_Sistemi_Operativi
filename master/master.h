@@ -53,9 +53,9 @@ struct statistic{
     int success_req;            /* viaggi eseguiti con successo */
     int outstanding_req;        /* viaggi inevasi */
     int aborted_req;            /* viaggi abortiti */
-    long pid_hcells_taxi;       /* pid del taxi che ha percorso più celle */
-    int high_ncells_crossed;    /* numero celle attraversate dal taxi che ah percorso più celle taxi */
-    long pid_htime_taxi;        /* pid del taxi che ha impiegato più tempo di tutti */
+    long pid_hcells_taxi;       /* pid del taxi che ha percorso più celle di tutti */
+    int high_ncells_crossed;    /* numero celle attraversate dal taxi che ha percorso più celle di tutti */
+    long pid_htime_taxi;        /* pid del taxi che ha impiegato più tempo di tutti per servire una richiesta */
     long high_time;             /* tempo impiegato dal taxi peggiore */
     long pid_hreq_taxi;         /* pid taxi che ha raccolto più richieste */
     int n_high_req;             /* numero di richieste raccolte dal taxi con più celle */
@@ -68,19 +68,16 @@ struct request_queue{
 };
 
 
-enum semaphores{SEM_MASTER, SEM_SOURCE, SEM_TAXI, SEM_START};
+enum semaphores{SEM_MASTER, SEM_SOURCE, SEM_TAXI, SEM_START, SEM_ST};
 
 
 /* stampa la mappa evidenzianziando hole, sources e top_cells */
-void print_map(map *city_map);
+void print_map(map *city_map, int n_top_cells);
 
 /* inizializza la struttura delle statistiche */
 void init_stat(struct statistic *stat);
 
-/* stampa lo stato di occupazione delle varie celle */
+/* stampa in percentuale lo stato di occupazione delle varie celle */
 void print_status_cells(map *city_map);
-
-/* controlla lo status di un processo */
-int check_status(int status);
 
 #endif
