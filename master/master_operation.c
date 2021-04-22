@@ -17,7 +17,7 @@ void init_stat(struct statistic *stat){
 /* stampa la mappa evidenzianziando hole, sources e top_cells */
 void print_map(map *city_map, int n_top_cells){
     int register i,j; 
-    int temp;
+    int temp, max, min;
     int *tcel;
     
     if((tcel = (int *)malloc(sizeof(int) * n_top_cells ))== NULL){
@@ -45,25 +45,24 @@ void print_map(map *city_map, int n_top_cells){
     }*/
 
     /* recupero le celle più attraversate */
-    for(i = 0; i < SO_WIDTH*SO_HEIGHT-1 ; i++){
+    for(i = 0; i < SO_WIDTH*SO_HEIGHT ; i++){
         printf("cella i %d ntra %ld\n", i, city_map->m_cell[i].transitions);
-        
-          /*  if(city_map->m_cell[i].transitions > city_map->m_cell[tcel[j]].transitions){
-                tcel[j] = i;
-            }*/
-        
     }
 
-    for(i = 0; i < n_top_cells; i++){
-        for(j = 0; j < SO_WIDTH*SO_WIDTH-1; j++){
-            if(city_map->m_cell[j].transitions > city_map->m_cell[j+1].transitions){
-                temp = j;
-            }else{
-                temp = j+1;
-            }
+   
+    for(i = 0; i < SO_WIDTH*SO_HEIGHT; i++){ /* per ogni elemento della mappa cerco il massimo */
+        max = 0;
+        if(city_map->m_cell[max].transitions > city_map->m_cell[i].transitions){
+            min = i;
         }
-        tcel[i] = temp;
+        if(city_map->m_cell[max].transitions < city_map->m_cell[i].transitions){
+            /* numero transizioni minore o uguale */
+            max = i;
+        }
+        /* registro la posizione max nel vettore ncell */
+
     }
+    printf("max pos %d ntra %ld, min pos %d ntra %ld\n", max, city_map->m_cell[max].transitions, min, city_map->m_cell[min].transitions);
 
     printf("\n");
     for(i = 0; i < n_top_cells; i++){
