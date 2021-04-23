@@ -84,6 +84,9 @@ void sort_vector_transition(int* vet, int length, map* city_map);
 /* verifica se la cella è una top cell */
 int is_top_cell(int pos, const int* vet, int length);
 
+/* dealloca le risorse in seguito ad un errore */
+void free_all();
+
 /* handler di segnali master */
 void master_handler(int sig);
 

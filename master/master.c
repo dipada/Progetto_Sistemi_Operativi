@@ -97,6 +97,7 @@ int main(int argc, char **argv){
             if(WIFEXITED(status)){
                 if(WEXITSTATUS(status)){ /* analizza lo status di uscita */
                     fprintf(stderr,"[%s]: Exiting due to error map...\n", __FILE__);
+                    free_all();
                     exit(EXIT_FAILURE);
                 }  
             }
@@ -138,7 +139,7 @@ int main(int argc, char **argv){
         case -1:
             ERROR_EXIT
         case 0:
-            /* ogni 5 secondi stampa lo stato di occupazione delle celle */
+            /* ogni second0 stampa lo stato di occupazione delle celle */
             sops[0].sem_num = SEM_START;
             sops[0].sem_op = -1;
             sops[0].sem_flg = 0;
@@ -146,7 +147,7 @@ int main(int argc, char **argv){
                 ERROR_EXIT
             }
 
-            trstat.tv_sec = 5;
+            trstat.tv_sec = 1;
             trstat.tv_nsec = 0;
             trestat.tv_sec = 0;
             trestat.tv_sec = 0;

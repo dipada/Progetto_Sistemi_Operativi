@@ -1,5 +1,6 @@
-#include "mappa.h"
 #include "../master/master.h"
+#include "mappa.h"
+
 
 /* handler gestione ALARM per creazione mappa */
 void map_handler(int sig){
@@ -92,22 +93,25 @@ void load_configuration(struct parameters* param, char * filename){
         exit(EXIT_FAILURE);
     }
     if((param->so_holes + param->so_source) > SO_WIDTH*SO_HEIGHT){
-        fprintf(stderr,"Error: SO_HOLES and SO_SOURCE execeed numbers of cells in the map, actually map has [%d] cells\n", SO_WIDTH*SO_HEIGHT);
+        fprintf(stderr,"Error: SO_HOLES and SO_SOURCE execeed numbers of cells in the map, actually map has [%d] cells. Decrease SO_HOLES or SO_SOURCE\n", SO_WIDTH*SO_HEIGHT);
         exit(EXIT_FAILURE);
     }
     if(param->so_taxi > param->so_cap_min*(SO_WIDTH*SO_HEIGHT-param->so_holes)){
         fprintf(stderr,"Error: SO_TAXI execeed number of avaible position. max %d\n", param->so_cap_min*(SO_WIDTH*SO_HEIGHT-param->so_holes));
         exit(EXIT_FAILURE);
     }
-    if(param->so_top_cells > (SO_WIDTH*SO_HEIGHT-param->so_holes)){
-        fprintf(stderr,"Error: SO_TOP_CELL execeed number of non-hole cells. max %d\n", SO_WIDTH*SO_HEIGHT-param->so_holes);
+    if(param->so_top_cells > (SO_WIDTH*SO_HEIGHT-param->so_holes)/2){
+        fprintf(stderr,"Error: SO_TOP_CELL execeed number of not-hole cells. max %d\n", (SO_WIDTH*SO_HEIGHT-param->so_holes)/2);
         exit(EXIT_FAILURE);
     }
-    if(param->so_timeout <= 0 || param->so_timeout > param->so_duration ){
+    if(param->so_timeout <= 0 || param->so_timeout >= param->so_duration ){
         fprintf(stderr,"Error: SO_TIMEOUT must be almost 1 sec and lower than SO_DURATION\n");
         exit(EXIT_FAILURE);
     }
-
+    if(param->so_taxi > 4000){
+        fprintf(stdout,"Error: invalid number of SO_TAXI (%d) too big. Max 4000.\n", param->so_taxi);
+        exit(EXIT_FAILURE);
+    }
 
     fclose(fp);
 }
@@ -284,5 +288,3 @@ int dw_sx_cell_hole(const map *city_map, const int start_cell){
 int dw_dx_cell_hole(const map *city_map, const int start_cell){
     return (city_map->m_cell[(start_cell+SO_WIDTH)+1].is_hole == 1) ? 1 : 0;
 }
-
-

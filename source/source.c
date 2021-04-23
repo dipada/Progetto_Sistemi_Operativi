@@ -105,6 +105,7 @@ int main(int argc, char** argv){
         /* preparazione e invio della richiesta */    
         if(make_request(city_map, qid, source_pos) == -1){
             if(errno != EAGAIN){
+                sigprocmask(SIG_BLOCK, &my_mask, NULL);
                 sops[0].sem_num = SEM_ST;
                 sops[0].sem_op = -1;
                 sops[0].sem_flg = 0;
@@ -120,6 +121,7 @@ int main(int argc, char** argv){
                 if(semop(semid, sops, 1) == -1){
                     ERROR_EXIT
                 }
+                sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
                 exit(EXIT_FAILURE);
             }
         }else{

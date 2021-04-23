@@ -56,4 +56,3 @@ int get_random(int a, int b){
     /* (b - a + 1) numeri nell'intervallo [a,b] */
     return (a <= b) ? (unsigned int)(rand()%(b - a + 1) + a) : -1;    
 }
-

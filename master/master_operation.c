@@ -151,3 +151,39 @@ int is_top_cell(int pos, const int* vet, int length){
     }
     return f;
 }
+
+/* dealloca le risorse in seguito ad un errore sulla mappa */
+void free_all(){
+    int shm_map, shm_par, shm_stat, qid, semid;
+    if((shm_map = shmget(SHMKEY_MAP, sizeof(map), 0)) == -1){
+        ERROR_EXIT
+    }
+    if((shm_par = shmget(SHMKEY_PAR, sizeof(struct parameters), 0)) == -1){
+        ERROR_EXIT
+    }
+    if((shm_stat = shmget(SHMKEY_STAT, sizeof(struct statistic), 0)) == -1){
+        ERROR_EXIT
+    }
+    if((semid = semget(SEMKEY, 5, 0)) == -1){
+        ERROR_EXIT
+    }
+    if((qid = msgget(MSGKEY, 0)) == -1){
+        ERROR_EXIT
+    }
+
+    if(msgctl(qid, IPC_RMID, NULL)){
+        ERROR_EXIT
+    }
+    if(shmctl(shm_map,IPC_RMID, NULL) == -1){
+        ERROR_EXIT
+    }
+    if(shmctl(shm_par,IPC_RMID, NULL) == -1){
+        ERROR_EXIT
+    }
+    if(shmctl(shm_stat,IPC_RMID, NULL) == -1){
+        ERROR_EXIT
+    }
+    if(semctl(semid,0, IPC_RMID) == -1){
+        ERROR_EXIT
+    }
+}
