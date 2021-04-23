@@ -59,7 +59,8 @@ int main(int argc, char** argv){
     }
 
     sigaction(SIGTERM, &sa, NULL);
-
+    
+    sigprocmask(SIG_BLOCK, &my_mask, NULL);
     sops[0].sem_num = SEM_MASTER;
     sops[0].sem_op = -1;
     sops[0].sem_flg = 0;
@@ -79,7 +80,7 @@ int main(int argc, char** argv){
     if(semop(semid, sops, 2) == -1){
         ERROR_EXIT
     }
-
+    sigprocmask(SIG_UNBLOCK, &my_mask, NULL);
     /* in attesa del processo master che autorizza l'avvio della simulazione */
     /* il master è in attesa dello 0 di SEM_SOURCE */
     sops[0].sem_num = SEM_START;

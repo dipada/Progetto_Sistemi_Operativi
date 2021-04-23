@@ -253,7 +253,7 @@ int main(int argc, char **argv){
     print_map(city_map, param->so_top_cells);
 
     /* stampa statistiche */   
-    printf("\n\nTotal request: [%d] Success: ["CGREEN"%d"CDEFAULT"] Aborted:["CRED"%d"CDEFAULT"] Outstanding: ["CYELLOW"%d"CDEFAULT"]\n", \
+    printf("\n\nTotal request: [%d] Success: ["CGREEN"%d"CDEFAULT"] Aborted:["CRED"%d"CDEFAULT"] Outstanding: ["CYELLOW"%d"CDEFAULT"]\n",   \
         stat->n_request, stat->success_req, stat->aborted_req, stat->outstanding_req + (stat->n_request-stat->aborted_req-stat->success_req));
     
     printf("Taxi that cross more cell [%ld], number of cell crossed [%d]\n",stat->pid_hcells_taxi, stat->high_ncells_crossed);
@@ -275,6 +275,7 @@ int main(int argc, char **argv){
     if(shmdt(stat) == -1){
         ERROR_EXIT
     }
+    
     if(shmctl(shm_map,IPC_RMID, NULL) == -1){
         ERROR_EXIT
     }
